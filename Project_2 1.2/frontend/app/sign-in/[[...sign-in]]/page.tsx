@@ -81,20 +81,21 @@ export default function SignInPage() {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateSignIn()) {
-      // Store login data in localStorage for demo
-      const loginData = {
-        email,
-        role,
-        rememberMe,
-        secretPassword: role !== "STUDENT" ? secretPassword : undefined,
-      };
-      localStorage.setItem("currentUser", JSON.stringify(loginData));
-      if (rememberMe) {
-        localStorage.setItem("rememberedEmail", email);
+    if (!validateSignIn()) return;
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+      const res = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(email)}`);
+      if (!res.ok) {
+        setErrors({ submit: "Account not found. Please sign up first." });
+        return;
       }
-      // Redirect based on role
-      router.push(`/dashboard/${role.toLowerCase()}`);
+      const data = await res.json();
+      const userRole = String(data.role || "student").toLowerCase();
+      localStorage.setItem("currentUser", JSON.stringify({ email, role: userRole, rememberMe }));
+      if (rememberMe) localStorage.setItem("rememberedEmail", email);
+      router.push(`/dashboard/${userRole}`);
+    } catch (err: any) {
+      setErrors({ submit: "Unable to sign in. Please try again." });
     }
   };
 
@@ -114,8 +115,8 @@ export default function SignInPage() {
         : "oauth_google";
     await signIn.authenticateWithRedirect({
       strategy,
-      redirectUrl: "/dashboard/student",
-      redirectUrlComplete: "/dashboard/student",
+      redirectUrl: "/dashboard",
+      redirectUrlComplete: "/dashboard",
     });
     } catch {}
   };

@@ -13,6 +13,7 @@ class UserBase(BaseModel):
     first_name: str
     last_name: str
     role: UserRole = UserRole.STUDENT
+    phone_number: Optional[str] = None
 
 class UserCreate(UserBase):
     clerk_user_id: str

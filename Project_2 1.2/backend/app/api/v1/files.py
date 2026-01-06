@@ -6,7 +6,8 @@ import uuid
 from pathlib import Path
 
 from app.db.session import get_db
-from app.models.file import Resume, Certificate
+from app.models.resume import Resume
+from app.models.certificate import Certificate
 from app.schemas.file import ResumeCreate, ResumeResponse, ResumeUpdate, CertificateCreate, CertificateResponse, CertificateUpdate
 from app.core.config import settings
 

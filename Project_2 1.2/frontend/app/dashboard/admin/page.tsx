@@ -28,7 +28,7 @@ export default function AdminDashboard() {
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState('users')
   const [isAddingUser, setIsAddingUser] = useState(false)
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   const [pendingCertificates, setPendingCertificates] = useState<Array<any>>([])
   const fetchPendingCertificates = async () => {
     try {

@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 export default function StudentDashboard() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState('profile')
   const [isEditing, setIsEditing] = useState(false)

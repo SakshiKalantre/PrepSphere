@@ -13,7 +13,7 @@ declare global {
 
 export default function SignUpPage() {
   const router = useRouter();
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
   
   const [role, setRole] = useState("");
   const [secretPassword, setSecretPassword] = useState("");
@@ -108,8 +108,8 @@ export default function SignUpPage() {
           email: formData.email,
           firstName: formData.fullName.split(" ")[0],
           lastName: formData.fullName.split(" ").slice(1).join(" ") || "",
-          role: role.toUpperCase(),
-          phoneNumber: formData.phoneNumber,
+          role: (role || "STUDENT").toLowerCase(),
+          phoneNumber: formData.phoneNumber || null,
           clerkUserId: `local_${Date.now()}`,
         }),
       });
@@ -120,6 +120,7 @@ export default function SignUpPage() {
       setRegistrationSuccess(true);
       localStorage.setItem("pendingUser", JSON.stringify({ email: formData.email, role }));
       setIsLoading(false);
+      router.push("/sign-in");
     } catch (error: any) {
       console.error("SignUp error:", error);
       setIsLoading(false);

@@ -9,6 +9,30 @@ from app.core.config import settings
 
 router = APIRouter()
 
+@router.get("/by-email")
+def get_user_by_email(email: str, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": db_user.id,
+        "email": db_user.email,
+        "role": db_user.role.value if hasattr(db_user.role, "value") else db_user.role,
+        "clerk_user_id": db_user.clerk_user_id
+    }
+
+@router.get("/by-email/{email}")
+def get_user_by_email_path(email: str, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.email == email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": db_user.id,
+        "email": db_user.email,
+        "role": db_user.role.value if hasattr(db_user.role, "value") else db_user.role,
+        "clerk_user_id": db_user.clerk_user_id
+    }
+
 @router.post("/", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     # Check if user already exists
@@ -22,7 +46,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         email=user.email,
         first_name=user.first_name,
         last_name=user.last_name,
-        role=user.role
+        role=user.role,
+        phone_number=user.phone_number
     )
     db.add(db_user)
     db.commit()

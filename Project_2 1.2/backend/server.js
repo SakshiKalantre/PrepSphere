@@ -13,7 +13,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 8001;
 
-const connectionString = process.env.DATABASE_URL || 'postgresql://user:Swapnil%402102@localhost:5432/Project_2';
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set. Configure Neon connection string in backend/.env');
+}
+const connectionString = process.env.DATABASE_URL;
 const dbClient = new Client({ connectionString });
 
 dbClient.connect().then(() => {
@@ -588,7 +591,7 @@ app.post('/api/v1/users/register', async (req, res) => {
             `INSERT INTO users (clerk_user_id, email, first_name, last_name, phone_number, role, is_active, is_approved, profile_complete, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
              RETURNING id, clerk_user_id, email, first_name, last_name, role, phone_number`,
-            [candidateClerkId, email, firstName, lastName || '', phoneNumber || '', (role || 'student').toLowerCase(), true, (role || '').toUpperCase() === 'STUDENT', false]
+            [candidateClerkId, email, firstName, lastName || '', phoneNumber || '', (role || 'STUDENT').toUpperCase(), true, (role || '').toUpperCase() === 'STUDENT', false]
         );
         
         const newUser = insertResult.rows[0];
@@ -1220,7 +1223,7 @@ app.post('/api/v1/users/register', async (req, res) => {
       `INSERT INTO users (email, first_name, last_name, role, phone_number, clerk_user_id, is_active, is_approved, profile_complete, created_at, updated_at)
        VALUES ($1,$2,$3,$4,$5,$6,true,false,false,NOW(),NOW())
        RETURNING id, clerk_user_id, email, first_name, last_name, role, phone_number`,
-      [email, firstName || null, lastName || null, (role || 'student').toLowerCase(), phoneNumber || null, clerkUserId || null]
+      [email, firstName || null, lastName || null, (role || 'STUDENT').toUpperCase(), phoneNumber || null, clerkUserId || null]
     )
     res.status(201).json(result.rows[0])
   } catch (error) {
@@ -1341,6 +1344,15 @@ app.put('/api/v1/files/:file_id/verify', async (req, res) => {
 
 app.get('/health', (req, res) => {
     res.json({ status: 'healthy' });
+});
+
+app.get('/api/v1/debug/enums/userrole', async (req, res) => {
+  try {
+    const result = await dbClient.query(`SELECT enumlabel FROM pg_enum WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'userrole') ORDER BY enumsortorder`);
+    res.json(result.rows.map(r => r.enumlabel));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch enum values', details: String(error && error.message || '') });
+  }
 });
 
 // Health check
