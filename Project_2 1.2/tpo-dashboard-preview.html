@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TPO Dashboard - PrepSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        maroon: '#7A1F2A',
+                        gold: '#D6B36A',
+                        cream: '#FFF8F2',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FFF8F2;
+        }
+    </style>
+</head>
+<body class="bg-cream">
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-maroon w-10 h-10 rounded-full"></div>
+                <span class="text-2xl font-bold text-maroon">PrepSphere</span>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">TPO Dashboard</span>
+                <div class="bg-gray-200 border-2 border-dashed rounded-xl w-10 h-10"></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col md:flex-row gap-8">
+            <!-- Sidebar -->
+            <div class="md:w-1/4">
+                <div class="border-none shadow-md bg-white rounded-lg">
+                    <div class="p-6">
+                        <h2 class="text-lg font-semibold mb-4">TPO Dashboard</h2>
+                        <nav class="space-y-2">
+                            <button class="w-full justify-start bg-maroon text-white rounded-md px-4 py-2 flex items-center">
+                                <i class="fas fa-users mr-2"></i>
+                                Approve Profiles
+                            </button>
+                            <button class="w-full justify-start rounded-md px-4 py-2 flex items-center hover:bg-gray-100">
+                                <i class="fas fa-file-check mr-2"></i>
+                                Review Resumes
+                            </button>
+                            <button class="w-full justify-start rounded-md px-4 py-2 flex items-center hover:bg-gray-100">
+                                <i class="fas fa-briefcase mr-2"></i>
+                                Job Postings
+                            </button>
+                            <button class="w-full justify-start rounded-md px-4 py-2 flex items-center hover:bg-gray-100">
+                                <i class="fas fa-calendar mr-2"></i>
+                                Events
+                            </button>
+                            <button class="w-full justify-start rounded-md px-4 py-2 flex items-center hover:bg-gray-100">
+                                <i class="fas fa-bell mr-2"></i>
+                                Notifications
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="md:w-3/4">
+                <div class="flex justify-between items-center mb-6">
+                    <h1 class="text-2xl font-bold text-maroon">Pending Student Profiles</h1>
+                    <div class="flex space-x-2">
+                        <input type="text" placeholder="Search profiles..." class="border rounded-md px-4 py-2 w-64">
+                        <button class="bg-maroon text-white rounded-md px-4 py-2 flex items-center hover:bg-maroon/90">
+                            <i class="fas fa-search mr-2"></i>
+                            Search
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="border-none shadow-md bg-white rounded-lg">
+                        <div class="p-6">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="text-xl font-semibold">Anisha Sharma</h3>
+                                    <p class="text-gray-600">anisha.sharma@student.edu</p>
+                                    <p class="text-gray-600 mt-1">B.Sc Computer Science • Final Year</p>
+                                </div>
+                                <span class="bg-gold text-maroon px-3 py-1 rounded-full text-sm">Pending</span>
+                            </div>
+                            
+                            <div class="mt-6 flex space-x-3">
+                                <button class="bg-maroon text-white rounded-md px-4 py-2 flex items-center hover:bg-maroon/90">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Approve
+                                </button>
+                                <button class="border rounded-md px-4 py-2 flex items-center hover:bg-gray-100">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    View Details
+                                </button>
+                                <button class="border rounded-md px-4 py-2 flex items-center text-red-600 hover:text-red-700 hover:bg-gray-100">
+                                    <i class="fas fa-times mr-2"></i>
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="border-none shadow-md bg-white rounded-lg">
+                        <div class="p-6">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="text-xl font-semibold">Priya Patel</h3>
+                                    <p class="text-gray-600">priya.patel@student.edu</p>
+                                    <p class="text-gray-600 mt-1">B.Com • Final Year</p>
+                                </div>
+                                <span class="bg-gold text-maroon px-3 py-1 rounded-full text-sm">Pending</span>
+                            </div>
+                            
+                            <div class="mt-6 flex space-x-3">
+                                <button class="bg-maroon text-white rounded-md px-4 py-2 flex items-center hover:bg-maroon/90">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Approve
+                                </button>
+                                <button class="border rounded-md px-4 py-2 flex items-center hover:bg-gray-100">
+                                    <i class="fas fa-eye mr-2"></i>
+                                    View Details
+                                </button>
+                                <button class="border rounded-md px-4 py-2 flex items-center text-red-600 hover:text-red-700 hover:bg-gray-100">
+                                    <i class="fas fa-times mr-2"></i>
+                                    Reject
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

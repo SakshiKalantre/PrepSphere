@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrepSphere - College Placement Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --maroon: #800000;
+            --gold: #FFD700;
+            --cream: #FFF8DC;
+        }
+        body {
+            background-color: var(--cream);
+        }
+        .bg-maroon {
+            background-color: var(--maroon);
+        }
+        .text-maroon {
+            color: var(--maroon);
+        }
+        .bg-gold {
+            background-color: var(--gold);
+        }
+        .text-gold {
+            color: var(--gold);
+        }
+        .bg-cream {
+            background-color: var(--cream);
+        }
+        .text-cream {
+            color: var(--cream);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="index.html" class="flex items-center space-x-2">
+                <div class="bg-maroon w-12 h-12 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">SPND</span>
+                </div>
+                <span class="text-2xl font-bold text-maroon">PrepSphere</span>
+            </a>
+
+            <nav class="hidden md:flex space-x-8">
+                <a href="#about" class="text-gray-600 hover:text-maroon transition-colors">About</a>
+                <a href="#recruiters" class="text-gray-600 hover:text-maroon transition-colors">Recruiters</a>
+                <a href="#achievements" class="text-gray-600 hover:text-maroon transition-colors">Achievements</a>
+                <a href="#contact" class="text-gray-600 hover:text-maroon transition-colors">Contact</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <button id="signInBtn" class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon/90 transition-colors">Sign In</button>
+                <a href="dashboard.html" class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon/90 transition-colors">Dashboard</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="py-20 bg-gradient-to-r from-maroon to-red-900 text-white">
+        <div class="container mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-6">Empowering Future Leaders</h1>
+            <p class="text-xl mb-8 max-w-2xl mx-auto">Smt. P.N. Doshi Women's College prepares students for successful careers through comprehensive placement programs and industry partnerships.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="signup.html" class="bg-gold text-maroon px-8 py-3 rounded-md font-semibold hover:bg-yellow-300 transition-colors">Get Started</a>
+                <a href="#about" class="border-2 border-white text-white px-8 py-3 rounded-md font-semibold hover:bg-white/10 transition-colors">Learn More</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-maroon mb-4">About PrepSphere</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Our comprehensive placement management system connects talented students with leading companies.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div class="bg-maroon text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-graduation-cap text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">Skill Development</h3>
+                    <p class="text-gray-600">Comprehensive training programs to enhance technical and soft skills.</p>
+                </div>
+                
+                <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div class="bg-maroon text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-briefcase text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">Industry Connections</h3>
+                    <p class="text-gray-600">Strong partnerships with leading companies for internships and placements.</p>
+                </div>
+                
+                <div class="bg-white p-8 rounded-lg shadow-md text-center">
+                    <div class="bg-maroon text-white w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-chart-line text-2xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-semibold mb-4">Career Growth</h3>
+                    <p class="text-gray-600">Track record of excellent placement outcomes and career advancement.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Recruiters Section -->
+    <section id="recruiters" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-maroon mb-4">Our Recruiters</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Leading companies trust our students and regularly recruit from our campus.</p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center">
+                <div class="flex justify-center">
+                    <img src="https://placehold.co/150x80?text=Company+1" alt="Company 1" class="h-12 object-contain">
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://placehold.co/150x80?text=Company+2" alt="Company 2" class="h-12 object-contain">
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://placehold.co/150x80?text=Company+3" alt="Company 3" class="h-12 object-contain">
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://placehold.co/150x80?text=Company+4" alt="Company 4" class="h-12 object-contain">
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://placehold.co/150x80?text=Company+5" alt="Company 5" class="h-12 object-contain">
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://placehold.co/150x80?text=Company+6" alt="Company 6" class="h-12 object-contain">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Achievements Section -->
+    <section id="achievements" class="py-20">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-maroon mb-4">Our Achievements</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Celebrating years of excellence in education and placement.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-8 text-center">
+                <div>
+                    <div class="text-5xl font-bold text-maroon mb-2">95%</div>
+                    <div class="text-gray-600">Placement Rate</div>
+                </div>
+                <div>
+                    <div class="text-5xl font-bold text-maroon mb-2">150+</div>
+                    <div class="text-gray-600">Recruiting Companies</div>
+                </div>
+                <div>
+                    <div class="text-5xl font-bold text-maroon mb-2">25+</div>
+                    <div class="text-gray-600">Years of Excellence</div>
+                </div>
+                <div>
+                    <div class="text-5xl font-bold text-maroon mb-2">5000+</div>
+                    <div class="text-gray-600">Alumni Network</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-maroon mb-4">Get In Touch</h2>
+                <p class="text-gray-600 max-w-2xl mx-auto">Have questions? Reach out to our placement team for assistance.</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div>
+                    <h3 class="text-2xl font-semibold text-maroon mb-6">Contact Information</h3>
+                    
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <div class="bg-maroon p-3 rounded-full mr-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg text-gray-800">Address</h4>
+                                <p class="text-gray-600">Smt. P.N. Doshi Women's College<br>
+                                32, Dr. R.G. Thadani Marg,<br>
+                                Worli, Mumbai - 400018</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="bg-maroon p-3 rounded-full mr-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                    <polyline points="22,6 12,13 2,6"></polyline>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg text-gray-800">Email</h4>
+                                <p class="text-gray-600">placements@smpndoshi.edu.in</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start">
+                            <div class="bg-maroon p-3 rounded-full mr-4">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-lg text-gray-800">Phone</h4>
+                                <p class="text-gray-600">+91 22 1234 5678</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="bg-white border-none shadow-lg rounded-lg">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold text-maroon mb-4">Send us a message</h3>
+                            <form class="space-y-4">
+                                <div>
+                                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input
+                                        type="text"
+                                        id="name"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                                        placeholder="Your name"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input
+                                        type="email"
+                                        id="email"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                                        placeholder="your.email@example.com"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="message" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                                    <textarea
+                                        id="message"
+                                        rows="4"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                                        placeholder="Your message"
+                                    ></textarea>
+                                </div>
+                                <button class="w-full bg-maroon text-white py-2 rounded-md hover:bg-maroon/90 transition-colors">Send Message</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-maroon text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="bg-white w-8 h-8 rounded-full"></div>
+                        <span class="text-xl font-bold">PrepSphere</span>
+                    </div>
+                    <p class="text-cream/80 mb-4">
+                        Empowering women through quality education and exceptional placement opportunities.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-cream/80 hover:text-white transition-colors">
+                            <span class="sr-only">Facebook</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="#" class="text-cream/80 hover:text-white transition-colors">
+                            <span class="sr-only">Instagram</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.315 2c2.43 0 2.784.013 3.808.06 1.064.049 1.791.218 2.427.465a4.902 4.902 0 011.772 1.153 4.902 4.902 0 011.153 1.772c.247.636.416 1.363.465 2.427.048 1.067.06 1.407.06 4.123v.08c0 2.643-.012 2.987-.06 4.043-.049 1.064-.218 1.791-.465 2.427a4.902 4.902 0 01-1.153 1.772 4.902 4.902 0 01-1.772 1.153c-.636.247-1.363.416-2.427.465-1.067.048-1.407.06-4.123.06h-.08c-2.643 0-2.987-.012-4.043-.06-1.064-.049-1.791-.218-2.427-.465a4.902 4.902 0 01-1.772-1.153 4.902 4.902 0 01-1.153-1.772c-.247-.636-.416-1.363-.465-2.427-.047-1.024-.06-1.379-.06-3.808v-.63c0-2.43.013-2.784.06-3.808.049-1.064.218-1.791.465-2.427a4.902 4.902 0 011.153-1.772A4.902 4.902 0 015.45 2.525c.636-.247 1.363-.416 2.427-.465C8.901 2.013 9.256 2 11.685 2h.63zm-.081 1.802h-.468c-2.456 0-2.784.011-3.807.058-.975.045-1.504.207-1.857.344-.467.182-.8.398-1.15.748-.35.35-.566.683-.748 1.15-.137.353-.3.882-.344 1.857-.047 1.023-.058 1.351-.058 3.807v.468c0 2.456.011 2.784.058 3.807.045.975.207 1.504.344 1.857.182.466.399.8.748 1.15.35.35.683.566 1.15.748.353.137.882.3 1.857.344 1.054.048 1.37.058 4.041.058h.08c2.597 0 2.917-.01 3.96-.058.976-.045 1.505-.207 1.858-.344.466-.182.8-.398 1.15-.748.35-.35.566-.683.748-1.15.137-.353.3-.882.344-1.857.048-1.055.058-1.37.058-4.041v-.08c0-2.597-.01-2.917-.058-3.96-.045-.976-.207-1.505-.344-1.858a3.097 3.097 0 00-.748-1.15 3.098 3.098 0 00-1.15-.748c-.353-.137-.882-.3-1.857-.344-1.023-.047-1.351-.058-3.807-.058zM12 6.865a5.135 5.135 0 110 10.27 5.135 5.135 0 010-10.27zm0 1.802a3.333 3.333 0 100 6.666 3.333 3.333 0 000-6.666zm5.338-3.205a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z" clip-rule="evenodd" />
+                            </svg>
+                        </a>
+                        <a href="#" class="text-cream/80 hover:text-white transition-colors">
+                            <span class="sr-only">Twitter</span>
+                            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M8.29 20.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0022 5.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.072 4.072 0 012.8 9.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 012 18.407a11.616 11.616 0 006.29 1.84" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="index.html" class="text-cream/80 hover:text-white transition-colors">Home</a></li>
+                        <li><a href="#about" class="text-cream/80 hover:text-white transition-colors">About</a></li>
+                        <li><a href="#recruiters" class="text-cream/80 hover:text-white transition-colors">Recruiters</a></li>
+                        <li><a href="#achievements" class="text-cream/80 hover:text-white transition-colors">Achievements</a></li>
+                        <li><a href="#contact" class="text-cream/80 hover:text-white transition-colors">Contact</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-cream/80 hover:text-white transition-colors">Student Handbook</a></li>
+                        <li><a href="#" class="text-cream/80 hover:text-white transition-colors">Career Guide</a></li>
+                        <li><a href="#" class="text-cream/80 hover:text-white transition-colors">Internship Portal</a></li>
+                        <li><a href="#" class="text-cream/80 hover:text-white transition-colors">Alumni Network</a></li>
+                        <li><a href="#" class="text-cream/80 hover:text-white transition-colors">FAQ</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Newsletter</h3>
+                    <p class="text-cream/80 mb-4">Subscribe to our newsletter for updates</p>
+                    <form class="flex">
+                        <input
+                            type="email"
+                            placeholder="Your email"
+                            class="px-4 py-2 w-full rounded-l-md focus:outline-none text-gray-800"
+                        />
+                        <button
+                            type="submit"
+                            class="bg-gold text-maroon px-4 py-2 rounded-r-md hover:bg-gold/90 transition-colors"
+                        >
+                            Go
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="border-t border-cream/20 mt-8 pt-8 text-center text-cream/80">
+                <p>&copy; 2025 Smt. P.N. Doshi Women's College. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('signInBtn').addEventListener('click', function() {
+            alert('Sign in functionality would be implemented here');
+        });
+    </script>
+</body>
+</html>

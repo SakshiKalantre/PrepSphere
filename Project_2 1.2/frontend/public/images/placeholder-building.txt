@@ -1,0 +1,2 @@
+Please replace this file with the actual SPND College building image.
+Save your image as college-building.jpg in this directory.

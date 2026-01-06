@@ -1,0 +1,2 @@
+Please replace this file with the actual SPND College logo image.
+Save your logo as spnd-logo.png in this directory.

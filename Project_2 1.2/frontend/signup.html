@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - PrepSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --maroon: #800000;
+            --gold: #FFD700;
+            --cream: #FFF8DC;
+        }
+        body {
+            background-color: var(--cream);
+        }
+        .bg-maroon {
+            background-color: var(--maroon);
+        }
+        .text-maroon {
+            color: var(--maroon);
+        }
+        .bg-gold {
+            background-color: var(--gold);
+        }
+        .text-gold {
+            color: var(--gold);
+        }
+        .bg-cream {
+            background-color: var(--cream);
+        }
+        .text-cream {
+            color: var(--cream);
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <div>
+                    <div class="mx-auto h-16 w-16 rounded-full bg-maroon flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">SPND</span>
+                    </div>
+                    <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                        Create your account
+                    </h2>
+                    <p class="mt-2 text-center text-sm text-gray-600">
+                        Join PrepSphere to kickstart your career journey
+                    </p>
+                </div>
+                <form class="mt-8 space-y-6" action="#" method="POST">
+                    <input type="hidden" name="remember" value="true">
+                    <div class="rounded-md space-y-4">
+                        <div>
+                            <label for="first-name" class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input id="first-name" name="first-name" type="text" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm" placeholder="First Name">
+                        </div>
+                        
+                        <div>
+                            <label for="last-name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input id="last-name" name="last-name" type="text" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm" placeholder="Last Name">
+                        </div>
+                        
+                        <div>
+                            <label for="email-address" class="block text-sm font-medium text-gray-700">Email address</label>
+                            <input id="email-address" name="email" type="email" autocomplete="email" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm" placeholder="Email address">
+                        </div>
+                        
+                        <div>
+                            <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                            <input id="password" name="password" type="password" autocomplete="new-password" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm" placeholder="Password">
+                        </div>
+                        
+                        <div>
+                            <label for="confirm-password" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                            <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm" placeholder="Confirm Password">
+                        </div>
+                        
+                        <div>
+                            <label for="role" class="block text-sm font-medium text-gray-700">Role</label>
+                            <select id="role" name="role" required class="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-maroon focus:border-maroon focus:z-10 sm:text-sm">
+                                <option value="">Select your role</option>
+                                <option value="student">Student</option>
+                                <option value="tpo">Training & Placement Officer</option>
+                                <option value="admin">Administrator</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input id="terms" name="terms" type="checkbox" class="h-4 w-4 text-maroon focus:ring-maroon border-gray-300 rounded">
+                        <label for="terms" class="ml-2 block text-sm text-gray-900">
+                            I agree to the <a href="#" class="font-medium text-maroon hover:text-maroon/80">Terms and Conditions</a>
+                        </label>
+                    </div>
+
+                    <div>
+                        <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-maroon hover:bg-maroon/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-maroon">
+                            Sign up
+                        </button>
+                    </div>
+                </form>
+                <div class="mt-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">
+                                Or continue with
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 grid grid-cols-2 gap-3">
+                        <div>
+                            <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="fab fa-google text-red-500"></i>
+                                <span class="ml-2">Google</span>
+                            </a>
+                        </div>
+                        <div>
+                            <a href="#" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                <i class="fab fa-microsoft text-blue-500"></i>
+                                <span class="ml-2">Microsoft</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">
+                        Already have an account?
+                        <a href="signin.html" class="font-medium text-maroon hover:text-maroon/80">
+                            Sign in
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

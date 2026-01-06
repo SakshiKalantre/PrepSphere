@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - PrepSphere</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --maroon: #800000;
+            --gold: #FFD700;
+            --cream: #FFF8DC;
+        }
+        body {
+            background-color: var(--cream);
+        }
+        .bg-maroon {
+            background-color: var(--maroon);
+        }
+        .text-maroon {
+            color: var(--maroon);
+        }
+        .bg-gold {
+            background-color: var(--gold);
+        }
+        .text-gold {
+            color: var(--gold);
+        }
+        .bg-cream {
+            background-color: var(--cream);
+        }
+        .text-cream {
+            color: var(--cream);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="bg-white shadow-sm">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center space-x-2">
+                <div class="bg-maroon w-10 h-10 rounded-full flex items-center justify-center">
+                    <span class="text-white font-bold text-xs">SPND</span>
+                </div>
+                <span class="text-xl font-bold text-maroon">PrepSphere</span>
+            </a>
+
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-600">Welcome, Student</span>
+                <div class="w-10 h-10 rounded-full bg-maroon flex items-center justify-center text-white">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-maroon">Student Dashboard</h1>
+            <p class="text-gray-600">Welcome back! Here's what's happening today.</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-briefcase text-blue-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-600">Applied Jobs</p>
+                        <p class="text-2xl font-bold">5</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-600">Upcoming Events</p>
+                        <p class="text-2xl font-bold">3</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-full mr-4">
+                        <i class="fas fa-file-alt text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-600">Documents</p>
+                        <p class="text-2xl font-bold">8</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile and Recent Activity -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Profile Card -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                    <h2 class="text-xl font-bold text-maroon mb-4">My Profile</h2>
+                    <div class="flex flex-col items-center mb-6">
+                        <div class="w-24 h-24 rounded-full bg-maroon flex items-center justify-center text-white mb-4">
+                            <i class="fas fa-user text-4xl"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold">Anisha Sharma</h3>
+                        <p class="text-gray-600">B.Sc Computer Science</p>
+                        <span class="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full mt-2">Active</span>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Email</span>
+                            <span>anisha.sharma@example.com</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Phone</span>
+                            <span>+91 98765 43210</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Year</span>
+                            <span>Final Year</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Skills</span>
+                            <span>JavaScript, Python, React</span>
+                        </div>
+                    </div>
+
+                    <button class="w-full bg-maroon text-white py-2 rounded-md hover:bg-maroon/90 transition-colors mt-6">
+                        Edit Profile
+                    </button>
+                </div>
+
+                <!-- Upcoming Events -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-maroon mb-4">Upcoming Events</h2>
+                    <div class="space-y-4">
+                        <div class="border-b pb-4 last:border-0 last:pb-0">
+                            <h3 class="font-semibold">Resume Writing Workshop</h3>
+                            <p class="text-gray-600 text-sm">Jan 10, 2024 • 10:00 AM</p>
+                            <p class="text-gray-600 text-sm">Seminar Hall A</p>
+                        </div>
+                        <div class="border-b pb-4 last:border-0 last:pb-0">
+                            <h3 class="font-semibold">Mock Interview Session</h3>
+                            <p class="text-gray-600 text-sm">Jan 15, 2024 • 2:00 PM</p>
+                            <p class="text-gray-600 text-sm">Career Center</p>
+                        </div>
+                        <div class="border-b pb-4 last:border-0 last:pb-0">
+                            <h3 class="font-semibold">Industry Expert Talk</h3>
+                            <p class="text-gray-600 text-sm">Jan 20, 2024 • 4:00 PM</p>
+                            <p class="text-gray-600 text-sm">Auditorium</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Job Listings -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-maroon">Job Opportunities</h2>
+                        <button class="text-maroon hover:text-maroon/80">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="font-semibold text-lg">Software Engineer</h3>
+                                    <p class="text-gray-600">TechCorp</p>
+                                </div>
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Full-time</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i> Mumbai</span>
+                                <span class="text-gray-600"><i class="fas fa-rupee-sign mr-1"></i> ₹8-12 LPA</span>
+                                <span class="text-gray-600"><i class="fas fa-clock mr-1"></i> Posted 2 days ago</span>
+                            </div>
+                            <div class="mt-4">
+                                <button class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon/90 transition-colors mr-2">
+                                    Apply Now
+                                </button>
+                                <button class="border border-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="font-semibold text-lg">Data Analyst</h3>
+                                    <p class="text-gray-600">DataSystems</p>
+                                </div>
+                                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">Full-time</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i> Pune</span>
+                                <span class="text-gray-600"><i class="fas fa-rupee-sign mr-1"></i> ₹6-10 LPA</span>
+                                <span class="text-gray-600"><i class="fas fa-clock mr-1"></i> Posted 1 week ago</span>
+                            </div>
+                            <div class="mt-4">
+                                <button class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon/90 transition-colors mr-2">
+                                    Apply Now
+                                </button>
+                                <button class="border border-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex justify-between">
+                                <div>
+                                    <h3 class="font-semibold text-lg">Marketing Intern</h3>
+                                    <p class="text-gray-600">BrandMasters</p>
+                                </div>
+                                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">Internship</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="text-gray-600"><i class="fas fa-map-marker-alt mr-1"></i> Remote</span>
+                                <span class="text-gray-600"><i class="fas fa-rupee-sign mr-1"></i> ₹15,000/month</span>
+                                <span class="text-gray-600"><i class="fas fa-clock mr-1"></i> Posted 3 days ago</span>
+                            </div>
+                            <div class="mt-4">
+                                <button class="bg-maroon text-white px-4 py-2 rounded-md hover:bg-maroon/90 transition-colors mr-2">
+                                    Apply Now
+                                </button>
+                                <button class="border border-gray-300 text-gray-600 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors">
+                                    View Details
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Applications -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-maroon mb-4">Recent Applications</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left py-3 px-4">Position</th>
+                                    <th class="text-left py-3 px-4">Company</th>
+                                    <th class="text-left py-3 px-4">Date Applied</th>
+                                    <th class="text-left py-3 px-4">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="border-b">
+                                    <td class="py-3 px-4">Frontend Developer</td>
+                                    <td class="py-3 px-4">WebTech Solutions</td>
+                                    <td class="py-3 px-4">Dec 15, 2023</td>
+                                    <td class="py-3 px-4">
+                                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Under Review</span>
+                                    </td>
+                                </tr>
+                                <tr class="border-b">
+                                    <td class="py-3 px-4">Software Intern</td>
+                                    <td class="py-3 px-4">Innovate Labs</td>
+                                    <td class="py-3 px-4">Dec 10, 2023</td>
+                                    <td class="py-3 px-4">
+                                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Shortlisted</span>
+                                    </td>
+                                </tr>
+                                <tr class="border-b">
+                                    <td class="py-3 px-4">Junior Developer</td>
+                                    <td class="py-3 px-4">CodeCraft Inc</td>
+                                    <td class="py-3 px-4">Dec 5, 2023</td>
+                                    <td class="py-3 px-4">
+                                        <span class="bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs">Rejected</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-maroon text-white py-8 mt-12">
+        <div class="container mx-auto px-4 text-center">
+            <p>&copy; 2025 Smt. P.N. Doshi Women's College. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>
