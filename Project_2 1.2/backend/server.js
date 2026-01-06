@@ -352,14 +352,11 @@ app.post('/api/v1/files/upload-r2', async (req, res) => {
     const userIdIntR2 = parseInt(user_id)
     const r2UserCheck = await dbClient.query('SELECT id FROM users WHERE id = $1', [userIdIntR2])
     if (r2UserCheck.rows.length === 0) return res.status(404).json({ error: 'User not found' })
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_ACCESS_KEY_ID
-    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_SECRET_ACCESS_KEY
-    const endpoint = process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : '')
-    const bucket = process.env.R2_BUCKET_NAME || process.env.CLOUDFLARE_BUCKET_NAME
-    if (!accessKeyId || !secretAccessKey || !endpoint || !bucket) {
+    const bucket = R2_BUCKET_NAME || process.env.CLOUDFLARE_BUCKET_NAME
+    const endpoint = R2_ENDPOINT
+    if (!s3 || !bucket || !endpoint) {
       return res.status(500).json({ error: 'Cloud storage is not configured' })
     }
-    const client = new S3Client({ region: 'auto', endpoint, forcePathStyle: true, credentials: { accessKeyId, secretAccessKey } })
     const safeName = `${Date.now()}_${Math.floor(Math.random()*1e6)}_${String(file_name).replace(/[^a-zA-Z0-9.\-_]/g,'_')}`
     const objectKey = `${parseInt(user_id)}/${safeName}`
     const buf = Buffer.from(content_base64, 'base64')
@@ -369,7 +366,7 @@ app.post('/api/v1/files/upload-r2', async (req, res) => {
     if (buf.length > 500 * 1024) {
       return res.status(413).json({ error: 'Max file size is 500 KB' })
     }
-    await client.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: buf, ContentType: mime_type }))
+    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: buf, ContentType: mime_type }))
     const publicUrl = `${endpoint}/${bucket}/${objectKey}`
     const insert = await dbClient.query(
       `INSERT INTO file_uploads (user_id, file_name, file_path, file_size, mime_type, file_type, file_url, uploaded_at)
@@ -379,7 +376,7 @@ app.post('/api/v1/files/upload-r2', async (req, res) => {
     return res.status(201).json(insert.rows[0])
   } catch (error) {
     console.error('R2 upload error:', error)
-    res.status(500).json({ error: 'Failed to upload file to Cloudflare R2' })
+    res.status(500).json({ error: 'Failed to upload file to Cloudflare R2', details: String((error && error.message) || '') })
   }
 })
 
@@ -394,11 +391,9 @@ app.post('/api/v1/files/upload-r2-multipart', upload.single('file'), async (req,
     const userIdInt = parseInt(user_id)
     const userCheck = await dbClient.query('SELECT id FROM users WHERE id = $1', [userIdInt])
     if (userCheck.rows.length === 0) return res.status(404).json({ error: 'User not found' })
-    const accessKeyId = process.env.R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_ACCESS_KEY_ID
-    const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_SECRET_ACCESS_KEY
-    const endpoint = process.env.R2_ENDPOINT || (process.env.R2_ACCOUNT_ID ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : '')
-    const bucket = process.env.R2_BUCKET_NAME || process.env.CLOUDFLARE_BUCKET_NAME
-    if (!accessKeyId || !secretAccessKey || !endpoint || !bucket) {
+    const bucket = R2_BUCKET_NAME || process.env.CLOUDFLARE_BUCKET_NAME
+    const endpoint = R2_ENDPOINT
+    if (!s3 || !bucket || !endpoint) {
       return res.status(500).json({ error: 'Cloud storage is not configured' })
     }
     if (file.mimetype !== 'application/pdf') {
@@ -407,10 +402,9 @@ app.post('/api/v1/files/upload-r2-multipart', upload.single('file'), async (req,
     if (file.buffer.length > 500 * 1024) {
       return res.status(413).json({ error: 'Max file size is 500 KB' })
     }
-    const client = new S3Client({ region: 'auto', endpoint, forcePathStyle: true, credentials: { accessKeyId, secretAccessKey } })
     const safeName = `${Date.now()}_${Math.floor(Math.random()*1e6)}_${String(file.originalname).replace(/[^a-zA-Z0-9.\-_]/g,'_')}`
     const objectKey = `${userIdInt}/${safeName}`
-    await client.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: file.buffer, ContentType: file.mimetype }))
+    await s3.send(new PutObjectCommand({ Bucket: bucket, Key: objectKey, Body: file.buffer, ContentType: file.mimetype }))
     const publicUrl = `${endpoint}/${bucket}/${objectKey}`
     const insert = await dbClient.query(
       `INSERT INTO file_uploads (user_id, file_name, file_path, file_size, mime_type, file_type, file_url, uploaded_at)
@@ -420,7 +414,7 @@ app.post('/api/v1/files/upload-r2-multipart', upload.single('file'), async (req,
     return res.status(201).json(insert.rows[0])
   } catch (error) {
     console.error('R2 multipart upload error:', error)
-    res.status(500).json({ error: 'Failed to upload file to Cloudflare R2 (multipart)' })
+    res.status(500).json({ error: 'Failed to upload file to Cloudflare R2 (multipart)', details: String((error && error.message) || '') })
   }
 })
 
@@ -522,10 +516,24 @@ app.get('/api/v1/files/:file_id', async (req, res) => {
     const result = await dbClient.query(`SELECT id, user_id, file_name, file_path, file_size, mime_type, file_type, file_url, uploaded_at, COALESCE(is_verified,false) as is_verified FROM file_uploads WHERE id = $1`, [fileId])
     if (result.rows.length === 0) return res.status(404).json({ error: 'File not found' })
     const r = result.rows[0]
-    const exists = fs.existsSync(path.resolve(r.file_path))
+    const exists = await ensureExists(r.file_path)
     res.json({ ...r, exists })
   } catch (error) {
     res.status(500).json({ error: 'Failed to load file metadata' })
+  }
+})
+
+// Debug: raw files listing (no existence filter)
+app.get('/api/v1/debug/files/by-user/:user_id', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.user_id)
+    const result = await dbClient.query(
+      `SELECT id, user_id, file_name, file_path, file_size, mime_type, file_type, file_url, uploaded_at FROM file_uploads WHERE user_id = $1 ORDER BY uploaded_at DESC`,
+      [userId]
+    )
+    res.json({ count: result.rows.length, rows: result.rows })
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to list files (debug)' })
   }
 })
 
@@ -694,9 +702,9 @@ app.post('/api/v1/users/:user_id/profile', async (req, res) => {
 // Update basic user info (name only; email cannot be changed here)
 app.put('/api/v1/users/:user_id', async (req, res) => {
   const userId = parseInt(req.params.user_id);
-  const { first_name, last_name } = req.body;
+  const { first_name, last_name, phone_number } = req.body;
   try {
-    const result = await dbClient.query('UPDATE users SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name), updated_at = NOW() WHERE id = $3 RETURNING id, clerk_user_id, email, first_name, last_name, role, phone_number', [first_name || null, last_name || null, userId]);
+    const result = await dbClient.query('UPDATE users SET first_name = COALESCE($1, first_name), last_name = COALESCE($2, last_name), phone_number = COALESCE($3, phone_number), updated_at = NOW() WHERE id = $4 RETURNING id, clerk_user_id, email, first_name, last_name, role, phone_number', [first_name || null, last_name || null, phone_number || null, userId]);
     if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
     res.json(result.rows[0]);
   } catch (error) {
@@ -1363,14 +1371,25 @@ app.listen(PORT, () => {
 });
 const ensureExists = async (filePath) => {
   try {
+    if (filePath && path.isAbsolute(String(filePath))) {
+      const abs = path.resolve(filePath)
+      return fs.existsSync(abs)
+    }
     if (s3 && R2_BUCKET_NAME) {
       await s3.send(new HeadObjectCommand({ Bucket: R2_BUCKET_NAME, Key: filePath }))
       return true
     }
     const abs = path.resolve(filePath)
     return fs.existsSync(abs)
-  } catch {
-    return false
+  } catch (e) {
+    try {
+      const code = (e && e.$metadata && e.$metadata.httpStatusCode) || 0
+      const name = (e && e.name) || ''
+      if (code === 404 || name === 'NotFound') return false
+      return true
+    } catch {
+      return true
+    }
   }
 }
   // moved to startup ensures block

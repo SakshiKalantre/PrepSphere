@@ -24,7 +24,7 @@ import {
   Filter
 } from 'lucide-react'
 
-const API_BASE_DEFAULT = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_DEFAULT = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
 
 export default function TPODashboard() {
   const { user } = useUser()
@@ -38,7 +38,7 @@ export default function TPODashboard() {
   const [verifiedResumes, setVerifiedResumes] = useState<Array<any>>([])
   const [resumeFilter, setResumeFilter] = useState<'pending'|'verified'>('pending')
   const [approvedStudents, setApprovedStudents] = useState<Array<any>>([])
-  const [tpoProfile, setTpoProfile] = useState({ alternateEmail:'', phone:'' })
+  const [tpoProfile, setTpoProfile] = useState({ tpoName:'', phone:'' })
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [notificationTitle, setNotificationTitle] = useState('')
   const [notificationMessage, setNotificationMessage] = useState('')
@@ -77,7 +77,7 @@ export default function TPODashboard() {
             const prf = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/${userData.id}/profile`)
             if (prf.ok) {
               const pjson = await prf.json()
-              setTpoProfile({ alternateEmail: pjson.alternate_email || '', phone: pjson.phone || '' })
+              setTpoProfile({ tpoName: `${userData.first_name || ''} ${userData.last_name || ''}`.trim(), phone: pjson.phone || userData.phone_number || '' })
             }
           } catch {}
         }
@@ -403,11 +403,11 @@ export default function TPODashboard() {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="altEmail">Alternate Email</Label>
+                        <Label htmlFor="tpoName">TPO Name</Label>
                         {isEditingProfile ? (
-                          <Input id="altEmail" value={tpoProfile.alternateEmail} onChange={(e)=>setTpoProfile({...tpoProfile, alternateEmail: e.target.value})} />
+                          <Input id="tpoName" value={tpoProfile.tpoName} onChange={(e)=>setTpoProfile({...tpoProfile, tpoName: e.target.value})} />
                         ) : (
-                          <p className="mt-1 text-gray-700">{tpoProfile.alternateEmail || 'Not provided'}</p>
+                          <p className="mt-1 text-gray-700">{tpoProfile.tpoName || 'Not provided'}</p>
                         )}
                       </div>
                       <div>
@@ -424,7 +424,11 @@ export default function TPODashboard() {
                       <Button className="bg-maroon hover:bg-maroon/90" onClick={async()=>{
                         try {
                           if (!tpoUserId) return
-                          await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/${tpoUserId}/profile`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ alternate_email: tpoProfile.alternateEmail || null, phone: tpoProfile.phone || null }) })
+                          await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/${tpoUserId}/profile`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ phone: tpoProfile.phone || null }) })
+                          const parts = (tpoProfile.tpoName || '').split(' ')
+                          const first = parts[0] || null
+                          const last = parts.slice(1).join(' ') || null
+                          await fetch(`${API_BASE_DEFAULT}/api/v1/users/${tpoUserId}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ first_name: first, last_name: last, phone_number: tpoProfile.phone || null }) })
                           setIsEditingProfile(false)
                         } catch {}
                       }}>Save</Button>

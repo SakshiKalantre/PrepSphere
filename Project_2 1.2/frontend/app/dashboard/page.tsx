@@ -9,9 +9,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const go = async () => {
-      if (!isSignedIn || !user) { router.replace('/sign-in'); return }
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+      // Fallback: if not signed in via Clerk, use localStorage role
+      if (!isSignedIn || !user) {
+        try {
+          const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+          const current = stored ? JSON.parse(stored) : null
+          const role = String(current?.role || 'student').toLowerCase()
+          router.replace(`/dashboard/${role}`)
+          return
+        } catch {}
+        router.replace('/sign-in'); 
+        return
+      }
       try {
-        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
         const res = await fetch(`${API_BASE}/api/v1/users/clerk/${user.id}`)
         if (res.ok) {
           const data = await res.json()

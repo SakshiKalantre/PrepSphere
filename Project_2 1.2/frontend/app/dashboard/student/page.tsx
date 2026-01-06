@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 
 export default function StudentDashboard() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState('profile')
   const [isEditing, setIsEditing] = useState(false)
@@ -34,7 +34,6 @@ export default function StudentDashboard() {
   const [profile, setProfile] = useState({
     name: '',
     email: '',
-    alternateEmail: '',
     phone: '',
     degree: '',
     year: '',
@@ -78,6 +77,7 @@ export default function StudentDashboard() {
             ...prev,
             name: displayName || `${userData.first_name} ${userData.last_name}`,
             email: userData.email,
+            phone: prev.phone || userData.phone_number || ''
           }))
           const profileDetailsResponse = await fetch(`${API_BASE}/api/v1/users/${userData.id}/profile`)
           if (profileDetailsResponse.ok) {
@@ -89,7 +89,6 @@ export default function StudentDashboard() {
               year: profileData.year || '',
               skills: profileData.skills || '',
               about: profileData.about || '',
-              alternateEmail: profileData.alternate_email || ''
             }))
           }
 
@@ -201,7 +200,6 @@ export default function StudentDashboard() {
           year: profile.year || null,
           skills: profile.skills || null,
           about: profile.about || null,
-          alternate_email: profile.alternateEmail || null
         })
       })
       // Also update name in users table if changed
@@ -210,7 +208,7 @@ export default function StudentDashboard() {
       await fetch(`${API_BASE}/api/v1/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: firstName || null, last_name: lastName || null })
+        body: JSON.stringify({ first_name: firstName || null, last_name: lastName || null, phone_number: profile.phone || null })
       })
       setIsEditing(false)
     } catch (e) {
@@ -490,16 +488,6 @@ export default function StudentDashboard() {
                         <p className="mt-1">{profile.email}</p>
                       </div>
                       <div>
-                        <Label htmlFor="altEmail">Alternate Email</Label>
-                        {isEditing ? (
-                          <Input 
-                            id="altEmail" 
-                            value={profile.alternateEmail} 
-                            onChange={(e) => setProfile({...profile, alternateEmail: e.target.value})} 
-                          />
-                        ) : (
-                          <p className="mt-1">{profile.alternateEmail || 'Not provided'}</p>
-                        )}
                       </div>
                       
                       <div>
