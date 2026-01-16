@@ -2,13 +2,47 @@
 
 import { useUser, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export default function HomePage() {
   const { isSignedIn, user } = useUser()
+  const [stats, setStats] = useState<any>(null)
+  const [breakdown, setBreakdown] = useState<any[]>([])
+  const [localUser, setLocalUser] = useState<any>(null)
+  // State to track visibility of hidden sections (Selections count, Real-time insights)
+  const [showHiddenInsights, setShowHiddenInsights] = useState(false)
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+  useEffect(() => {
+    // Check for local session
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+      if (stored) setLocalUser(JSON.parse(stored))
+    } catch {}
+
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/public/stats`)
+        if (res.ok) {
+          const data = await res.json()
+          setStats(data)
+        }
+        
+        const resBreakdown = await fetch(`${API_BASE}/api/v1/stats/placement-breakdown`)
+        if (resBreakdown.ok) {
+            const data = await resBreakdown.json()
+            setBreakdown(data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error)
+      }
+    }
+    fetchStats()
+  }, [])
+
 
   return (
     <div className="min-h-screen bg-cream">
@@ -30,11 +64,18 @@ export default function HomePage() {
           </nav>
           
           <div className="flex items-center space-x-4">
-            {isSignedIn ? (
+            {isSignedIn || localUser ? (
               <>
-                <span className="text-sm text-gray-600">Welcome, {user.firstName}</span>
-                <UserButton afterSignOutUrl="/" />
-                <Link href="/dashboard">
+                <span className="text-sm text-gray-600">Welcome, {user?.firstName || localUser?.email?.split('@')[0]}</span>
+                {isSignedIn && <UserButton afterSignOutUrl="/" />}
+                {!isSignedIn && localUser && (
+                  <Button variant="ghost" onClick={() => {
+                    localStorage.removeItem('currentUser')
+                    setLocalUser(null)
+                    window.location.reload()
+                  }}>Sign Out</Button>
+                )}
+                <Link href={isSignedIn ? "/dashboard" : `/dashboard/${localUser?.role?.toLowerCase() || 'student'}`}>
                   <Button variant="default" className="bg-maroon hover:bg-maroon/90">Dashboard</Button>
                 </Link>
               </>
@@ -117,6 +158,73 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Placement Insights Section */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+            <div className="text-center mb-16">
+                <h2 className="text-4xl font-bold text-maroon mb-4">Placement Insights</h2>
+                <div className="w-24 h-1 bg-gold mx-auto"></div>
+                <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+                    Real-time data on our students' success
+                </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-12">
+                <div className="bg-cream p-8 rounded-xl shadow-md">
+                    <h3 className="text-2xl font-bold text-maroon mb-6">Top Hiring Companies</h3>
+                    <div className="space-y-4">
+                        {breakdown.length > 0 ? breakdown.map((item, i) => (
+                            <div key={i} className="relative">
+                                <div className="flex justify-between text-sm font-medium mb-1">
+                                    <span>{item.company_name}</span>
+                                    <span>{item.count} Placed</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div 
+                                        className="bg-maroon h-2.5 rounded-full" 
+                                        style={{ width: `${Math.min((item.count / (breakdown[0]?.count || 1)) * 100, 100)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )) : (
+                            <p className="text-gray-500 italic">No placement data available yet.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-cream p-8 rounded-xl shadow-md flex flex-col justify-center">
+                     <h3 className="text-2xl font-bold text-maroon mb-6">Key Highlights</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        <div className="bg-white p-4 rounded-lg shadow text-center">
+                            <p className="text-3xl font-bold text-gold">{stats?.total_placed || 0}</p>
+                            <p className="text-gray-600 text-sm">Students Placed</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow text-center">
+                            <p className="text-3xl font-bold text-gold">{breakdown.length}</p>
+                            <p className="text-gray-600 text-sm">Hiring Companies</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow text-center">
+                            <p className="text-3xl font-bold text-gold">{stats?.total_jobs || 0}</p>
+                            <p className="text-gray-600 text-sm">Active Jobs</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow text-center">
+                            <p className="text-3xl font-bold text-gold">{stats?.total_applications || 0}</p>
+                            <p className="text-gray-600 text-sm">Total Applications</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow text-center">
+                            <p className="text-3xl font-bold text-gold">{stats?.total_students && stats?.total_placed ? Math.round((stats.total_placed/stats.total_students)*100) : 0}%</p>
+                            <p className="text-gray-600 text-sm">Placement Rate</p>
+                        </div>
+                        <div className="bg-white p-4 rounded-lg shadow text-center">
+                            <p className="text-3xl font-bold text-gold">₹4.5L</p>
+                            <p className="text-gray-600 text-sm">Avg Package</p>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </div>
+      </section>
+
       {/* Recruiters Section */}
       <section id="recruiters" className="py-20 bg-cream">
         <div className="container mx-auto px-4">
@@ -165,43 +273,92 @@ export default function HomePage() {
             <div className="w-24 h-1 bg-gold mx-auto"></div>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="border-t-4 border-maroon shadow-lg">
+          <div className="flex flex-wrap justify-center gap-8 mb-16">
+            <Card className="border-t-4 border-maroon shadow-lg w-full md:w-96">
               <CardHeader>
-                <CardTitle className="text-3xl text-center text-maroon">95%</CardTitle>
+                <CardTitle className="text-3xl text-center text-maroon">
+                  {stats ? `${Math.round((stats.total_placed / (stats.total_students || 1)) * 100)}%` : '95%'}
+                </CardTitle>
                 <CardDescription className="text-center">Placement Rate</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-center text-gray-600">
-                  Consistently high placement rate over the past 5 years
+                  {stats ? `Total ${stats.total_placed} students placed out of ${stats.total_students}` : 'Consistently high placement rate over the past 5 years'}
                 </p>
               </CardContent>
             </Card>
             
-            <Card className="border-t-4 border-gold shadow-lg">
+            {/* Hidden per user request: Selections Card. Controlled by showHiddenInsights state. */}
+            <Card className="border-t-4 border-gold shadow-lg w-full md:w-96" style={{ display: showHiddenInsights ? undefined : 'none' }}>
               <CardHeader>
-                <CardTitle className="text-3xl text-center text-maroon">₹12 LPA</CardTitle>
-                <CardDescription className="text-center">Highest Package</CardDescription>
+                <CardTitle className="text-3xl text-center text-maroon">{stats ? stats.total_selected : '0'}+</CardTitle>
+                <CardDescription className="text-center">Selections</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-center text-gray-600">
-                  Highest package offered to our recent graduate
+                  Total students selected in various roles
                 </p>
               </CardContent>
             </Card>
             
-            <Card className="border-t-4 border-maroon shadow-lg">
+            <Card className="border-t-4 border-maroon shadow-lg w-full md:w-96">
               <CardHeader>
-                <CardTitle className="text-3xl text-center text-maroon">150+</CardTitle>
-                <CardDescription className="text-center">Companies Visited</CardDescription>
+                <CardTitle className="text-3xl text-center text-maroon">{stats ? stats.total_jobs : '150+'}</CardTitle>
+                <CardDescription className="text-center">Job Opportunities</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-center text-gray-600">
-                  Number of companies that visited our campus last year
+                  Active job openings available for students
                 </p>
               </CardContent>
             </Card>
           </div>
+
+          {/* Real-time Stats Dashboard - Hidden per user request. Controlled by showHiddenInsights state. */}
+          {stats && (
+            <div className="bg-cream rounded-xl p-8 shadow-inner" style={{ display: showHiddenInsights ? undefined : 'none' }}>
+              <h3 className="text-2xl font-bold text-maroon mb-6 text-center">Real-time Placement Insights</h3>
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h4 className="font-semibold text-lg mb-4 text-gray-800">Application Trends</h4>
+                  <div className="space-y-4">
+                     <div className="flex justify-between text-sm">
+                       <span>Total Applications</span>
+                       <span className="font-bold">{stats.total_applications}</span>
+                     </div>
+                     <div className="w-full bg-gray-200 rounded-full h-2.5">
+                       <div className="bg-maroon h-2.5 rounded-full" style={{ width: '100%' }}></div>
+                     </div>
+                     <div className="flex justify-between text-sm">
+                       <span>Selection Rate</span>
+                       <span className="font-bold">{Math.round((stats.total_selected / (stats.total_applications || 1)) * 100)}%</span>
+                     </div>
+                     <div className="w-full bg-gray-200 rounded-full h-2.5">
+                       <div className="bg-gold h-2.5 rounded-full" style={{ width: `${(stats.total_selected / (stats.total_applications || 1)) * 100}%` }}></div>
+                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-lg shadow">
+                  <h4 className="font-semibold text-lg mb-4 text-gray-800">Top Opportunities</h4>
+                  <div className="space-y-3 max-h-48 overflow-y-auto">
+                    {stats.applications_by_job?.slice(0, 5).map((job: any, idx: number) => (
+                      <div key={idx} className="flex justify-between items-center border-b pb-2 last:border-0">
+                        <div>
+                          <p className="font-medium text-maroon text-sm">{job.title}</p>
+                          <p className="text-xs text-gray-500">{job.company}</p>
+                        </div>
+                        <Badge variant="outline" className="text-xs">{job.applications} Applicants</Badge>
+                      </div>
+                    ))}
+                    {(!stats.applications_by_job || stats.applications_by_job.length === 0) && (
+                      <p className="text-sm text-gray-500 text-center py-4">No active opportunities yet</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

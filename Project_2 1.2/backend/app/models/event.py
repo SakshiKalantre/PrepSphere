@@ -12,6 +12,7 @@ class Event(Base):
     location = Column(String, nullable=False)
     event_date = Column(DateTime(timezone=True), nullable=False)
     event_time = Column(String, nullable=False)
+    status = Column(String, default="Upcoming")  # Upcoming, Completed, Cancelled
     event_type = Column(String, nullable=True)  # workshop, interview, seminar, etc.
     capacity = Column(Integer, nullable=True)  # Max participants
     registered_count = Column(Integer, default=0)

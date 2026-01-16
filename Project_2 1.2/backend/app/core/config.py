@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql://user:password@localhost:5432/prepsphere"
     
     # CORS
-    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:8000"]
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:8000"]
     
     # Clerk
     CLERK_SECRET_KEY: str = ""
@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     # File upload
     UPLOAD_FOLDER: str = "./uploads"
     MAX_FILE_SIZE: int = 10 * 1024 * 1024  # 10MB
+    
+    # Cloudflare R2
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_ACCOUNT_ID: str = ""
+    R2_BUCKET_NAME: str = ""
+    R2_ENDPOINT: str = ""
     
     model_config = SettingsConfigDict(case_sensitive=True, env_file=".env", extra="ignore")
 

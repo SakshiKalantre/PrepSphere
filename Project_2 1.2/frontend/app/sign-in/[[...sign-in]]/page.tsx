@@ -28,6 +28,17 @@ export default function SignInPage() {
   const [recaptchaError, setRecaptchaError] = useState("");
 
   useEffect(() => {
+    // Check if already signed in locally
+    try {
+        const stored = localStorage.getItem("currentUser");
+        if (stored) {
+            const user = JSON.parse(stored);
+             if (user.role) {
+                 router.push(`/dashboard/${user.role.toLowerCase()}`);
+             }
+        }
+    } catch {}
+
     // Load reCAPTCHA script
     const script = document.createElement("script");
     script.src = "https://www.google.com/recaptcha/api.js";
@@ -83,18 +94,33 @@ export default function SignInPage() {
     e.preventDefault();
     if (!validateSignIn()) return;
     try {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
-      const res = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(email)}`);
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${API_BASE}/api/v1/users/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email,
+          password: password
+        })
+      });
       if (!res.ok) {
-        setErrors({ submit: "Account not found. Please sign up first." });
+        const errorData = await res.json().catch(() => ({}));
+        setErrors({ submit: errorData.detail || "Invalid email or password. Please try again." });
         return;
       }
       const data = await res.json();
       const userRole = String(data.role || "student").toLowerCase();
-      localStorage.setItem("currentUser", JSON.stringify({ email, role: userRole, rememberMe }));
+      localStorage.setItem("currentUser", JSON.stringify({ 
+        email: data.email, 
+        role: userRole, 
+        firstName: data.first_name,
+        lastName: data.last_name,
+        rememberMe 
+      }));
       if (rememberMe) localStorage.setItem("rememberedEmail", email);
       router.push(`/dashboard/${userRole}`);
     } catch (err: any) {
+      console.error('Sign in error:', err);
       setErrors({ submit: "Unable to sign in. Please try again." });
     }
   };
@@ -121,21 +147,37 @@ export default function SignInPage() {
     } catch {}
   };
 
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) {
       setErrors({ ...errors, forgotEmail: "Please enter your email" });
       return;
     }
-    // Simulate password reset
-    setResetMessage(
-      `Password reset link has been sent to ${forgotEmail}. Please check your email.`
-    );
-    setTimeout(() => {
-      setShowForgotPassword(false);
-      setResetMessage("");
-      setForgotEmail("");
-    }, 3000);
+    
+    try {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${API_BASE}/api/v1/users/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail })
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setResetMessage(data.message);
+        // Clear form after successful submission
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setResetMessage("");
+          setForgotEmail("");
+        }, 3000);
+      } else {
+        setErrors({ ...errors, forgotEmail: data.detail || "Failed to send password reset email" });
+      }
+    } catch (err) {
+      setErrors({ ...errors, forgotEmail: "Failed to send password reset email" });
+    }
   };
 
   const showSecretPasswordField = role === "TPO" || role === "ADMIN";
@@ -181,7 +223,17 @@ export default function SignInPage() {
                   type="email"
                   id="forgotEmail"
                   value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
+                  onChange={(e) => {
+                    setForgotEmail(e.target.value);
+                    // Clear error when user types
+                    if (errors.forgotEmail) {
+                      setErrors(prev => {
+                        const newErrors = {...prev};
+                        delete newErrors.forgotEmail;
+                        return newErrors;
+                      });
+                    }
+                  }}
                   placeholder="you@example.com"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent bg-cream"
                 />
@@ -367,6 +419,9 @@ export default function SignInPage() {
                 <p className="text-red-500 text-xs mt-2 text-center">{recaptchaError}</p>
               )}
             </div>
+            {errors.submit && (
+              <p className="text-red-500 text-sm text-center mt-2">{errors.submit}</p>
+            )}
               <Button
                 type="submit"
                 className="w-full bg-maroon hover:bg-maroon/90 text-white font-semibold py-3 rounded-lg mt-6"

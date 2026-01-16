@@ -9,7 +9,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const go = async () => {
-      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
       // Fallback: if not signed in via Clerk, use localStorage role
       if (!isSignedIn || !user) {
         try {

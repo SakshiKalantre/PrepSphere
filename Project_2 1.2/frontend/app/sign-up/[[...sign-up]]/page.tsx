@@ -13,7 +13,7 @@ declare global {
 
 export default function SignUpPage() {
   const router = useRouter();
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001';
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   
   const [role, setRole] = useState("");
   const [secretPassword, setSecretPassword] = useState("");
@@ -82,6 +82,10 @@ export default function SignUpPage() {
     if (!formData.fullName) newErrors.fullName = "Full name is required";
     if (!formData.email) newErrors.email = "Email is required";
     if (!formData.phoneNumber) newErrors.phoneNumber = "Phone number is required";
+    // Basic phone validation (digits, +, - only, length 10-15)
+    if (formData.phoneNumber && !/^[\d\+\-\s]{10,15}$/.test(formData.phoneNumber)) {
+        newErrors.phoneNumber = "Please enter a valid phone number";
+    }
     if (!formData.password) newErrors.password = "Password is required";
     if (!formData.confirmPassword) newErrors.confirmPassword = "Please confirm password";
     if (formData.password !== formData.confirmPassword) {
@@ -106,11 +110,11 @@ export default function SignUpPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: formData.email,
-          firstName: formData.fullName.split(" ")[0],
-          lastName: formData.fullName.split(" ").slice(1).join(" ") || "",
-          role: (role || "STUDENT").toLowerCase(),
-          phoneNumber: formData.phoneNumber || null,
-          clerkUserId: `local_${Date.now()}`,
+          first_name: formData.fullName.split(" ")[0],
+          last_name: formData.fullName.split(" ").slice(1).join(" ") || "",
+          phone_number: formData.phoneNumber,
+          password: formData.password,
+          role: (role || "student").toLowerCase(),
         }),
       });
       if (!res.ok) {

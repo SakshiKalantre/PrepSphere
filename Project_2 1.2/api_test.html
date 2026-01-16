@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+</head>
+<body>
+    <h1>API Test Results</h1>
+    <div id="results"></div>
+
+    <script>
+        async function testAPIs() {
+            const resultsDiv = document.getElementById('results');
+            
+            // Test Analytics API
+            try {
+                resultsDiv.innerHTML += '<h2>Testing Analytics API...</h2>';
+                const analyticsResponse = await fetch('http://127.0.0.1:8000/api/v1/admin/analytics');
+                const analyticsData = await analyticsResponse.json();
+                
+                resultsDiv.innerHTML += `<p>Status: ${analyticsResponse.status}</p>`;
+                resultsDiv.innerHTML += `<pre>${JSON.stringify(analyticsData, null, 2)}</pre>`;
+                
+                // Check required fields
+                const requiredFields = ['placedStudents', 'unplacedStudents', 'activeUsers', 'inactiveUsers'];
+                resultsDiv.innerHTML += '<h3>Required Fields Check:</h3><ul>';
+                requiredFields.forEach(field => {
+                    if (analyticsData.hasOwnProperty(field)) {
+                        resultsDiv.innerHTML += `<li style="color: green;">✓ ${field}: ${analyticsData[field]}</li>`;
+                    } else {
+                        resultsDiv.innerHTML += `<li style="color: red;">✗ ${field}: MISSING</li>`;
+                    }
+                });
+                resultsDiv.innerHTML += '</ul>';
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Analytics API Error: ${error.message}</p>`;
+            }
+            
+            resultsDiv.innerHTML += '<hr>';
+            
+            // Test Users API
+            try {
+                resultsDiv.innerHTML += '<h2>Testing Users API...</h2>';
+                const usersResponse = await fetch('http://127.0.0.1:8000/api/v1/admin/users');
+                const usersData = await usersResponse.json();
+                
+                resultsDiv.innerHTML += `<p>Status: ${usersResponse.status}</p>`;
+                resultsDiv.innerHTML += `<p>Total Users: ${usersData.length}</p>`;
+                
+                // Check for students with offer letters
+                const studentsWithOffers = usersData.filter(u => 
+                    (u.role === 'Student' || u.role === 'STUDENT') && u.has_verified_offer_letter
+                );
+                resultsDiv.innerHTML += `<p>Students with offer letters: ${studentsWithOffers.length}</p>`;
+                
+                if (studentsWithOffers.length > 0) {
+                    resultsDiv.innerHTML += '<h3>Sample students with offer letters:</h3><ul>';
+                    studentsWithOffers.slice(0, 3).forEach(student => {
+                        resultsDiv.innerHTML += `<li>${student.name}: has_verified_offer_letter = ${student.has_verified_offer_letter}</li>`;
+                    });
+                    resultsDiv.innerHTML += '</ul>';
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `<p style="color: red;">Users API Error: ${error.message}</p>`;
+            }
+        }
+        
+        testAPIs();
+    </script>
+</body>
+</html>

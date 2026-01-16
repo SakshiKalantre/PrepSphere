@@ -4,9 +4,9 @@ from datetime import datetime
 from enum import Enum
 
 class UserRole(str, Enum):
-    STUDENT = "student"
-    TPO = "tpo"
-    ADMIN = "admin"
+    STUDENT = "STUDENT"
+    TPO = "TPO"
+    ADMIN = "ADMIN"
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -39,6 +39,11 @@ class ProfileBase(BaseModel):
     year: Optional[str] = None
     skills: Optional[str] = None
     about: Optional[str] = None
+    alternate_email: Optional[str] = None
+    placement_status: Optional[str] = "Not Placed"
+    company_name: Optional[str] = None
+    offer_letter_url: Optional[str] = None
+    approval_status: Optional[str] = "Pending"
 
 class ProfileCreate(ProfileBase):
     user_id: int
@@ -55,3 +60,26 @@ class ProfileResponse(ProfileBase):
     
     class Config:
         from_attributes = True
+
+
+class UserRegistration(BaseModel):
+    email: EmailStr
+    first_name: str
+    last_name: str
+    phone_number: str
+    password: str
+    role: str = "student"
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str

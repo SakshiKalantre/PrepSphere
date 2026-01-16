@@ -19,18 +19,23 @@ import {
   Save,
   X
 } from 'lucide-react'
+import ResumeScorer from '@/components/ai-tools/ResumeScorer'
+import MockInterview from '@/components/ai-tools/MockInterview'
 
 export default function StudentDashboard() {
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8001'
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
   const { user } = useUser()
   const [activeTab, setActiveTab] = useState('profile')
+  const [activeTool, setActiveTool] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [userId, setUserId] = useState<number | null>(null)
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [certificateFile, setCertificateFile] = useState<File | null>(null)
+  const [offerLetterFile, setOfferLetterFile] = useState<File | null>(null)
   const [userFiles, setUserFiles] = useState<Array<any>>([])
   const [resumeProgress, setResumeProgress] = useState<number>(0)
   const [certProgress, setCertProgress] = useState<number>(0)
+  const [offerProgress, setOfferProgress] = useState<number>(0)
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -38,11 +43,15 @@ export default function StudentDashboard() {
     degree: '',
     year: '',
     skills: '',
-    about: ''
+    about: '',
+    placementStatus: 'Not Placed',
+    companyName: '',
+    offerLetterUrl: ''
   })
-  const [jobListings, setJobListings] = useState([])
-  const [events, setEvents] = useState([])
-  const [notifications, setNotifications] = useState([])
+  const [jobListings, setJobListings] = useState<Array<{id: number, title: string, company: string, location: string, job_type?: string, type?: string, posted?: string, deadline?: string, salary?: string, description?: string, requirements?: string, job_url?: string}>>([])
+  const [events, setEvents] = useState<Array<{id: number, title: string, location: string, status?: string, date?: string, time?: string, category?: string, description?: string, form_url?: string, created_at?: string}>>([])
+  const [notifications, setNotifications] = useState<Array<{id: number, title: string, message: string, time: string, read: boolean, sent_by?: number}>>([])
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set())
 
   // Fetch data from our API
   useEffect(() => {
@@ -58,7 +67,7 @@ export default function StudentDashboard() {
           // @ts-ignore
           email = user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress || null
           if (email && typeof window !== 'undefined') {
-            localStorage.setItem('currentUser', JSON.stringify({ email, role: 'STUDENT' }))
+            localStorage.setItem('currentUser', JSON.stringify({ email, role: 'student' }))
           }
         }
         if (!email) {
@@ -75,7 +84,7 @@ export default function StudentDashboard() {
           setUserId(userData.id)
           setProfile(prev => ({
             ...prev,
-            name: displayName || `${userData.first_name} ${userData.last_name}`,
+            name: `${userData.first_name} ${userData.last_name}`,
             email: userData.email,
             phone: prev.phone || userData.phone_number || ''
           }))
@@ -89,6 +98,9 @@ export default function StudentDashboard() {
               year: profileData.year || '',
               skills: profileData.skills || '',
               about: profileData.about || '',
+              placementStatus: profileData.placement_status || 'Not Placed',
+              companyName: profileData.company_name || '',
+              offerLetterUrl: profileData.offer_letter_url || ''
             }))
           }
 
@@ -102,7 +114,7 @@ export default function StudentDashboard() {
           } catch {}
         }
 
-        const jobsResponse = await fetch(`${API_BASE}/api/v1/jobs`)
+        const jobsResponse = await fetch(`${API_BASE}/api/v1/tpo/jobs?status=Active`)
         if (jobsResponse.ok) {
           const jobsData = await jobsResponse.json()
           setJobListings(jobsData)
@@ -116,10 +128,10 @@ export default function StudentDashboard() {
 
         try {
           if (uidLocal) {
-            const notifRes = await fetch(`${API_BASE}/api/v1/users/${uidLocal}/notifications`)
+            const notifRes = await fetch(`${API_BASE}/api/v1/notifications/user/${uidLocal}`)
             if (notifRes.ok) {
               const notif = await notifRes.json()
-              setNotifications(notif.map((n:any)=>({ id: n.id, title: n.title, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read })))
+              setNotifications(notif.map((n:any)=>({ id: n.id, title: n.title, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read, sent_by: n.sent_by })))
             }
           }
         } catch {}
@@ -135,13 +147,15 @@ export default function StudentDashboard() {
     const refreshNotifications = async () => {
       try {
         if (activeTab === 'notifications' && userId) {
-          const res = await fetch(`${API_BASE}/api/v1/users/${userId}/notifications`)
+          const res = await fetch(`${API_BASE}/api/v1/notifications/user/${userId}?skip=0&limit=50`)
           if (res.ok) {
             const rows = await res.json()
-            setNotifications(rows.map((n:any)=>({ id: n.id, title: n.title, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read })))
+            setNotifications(rows.map((n:any)=>({ id: n.id, title: n.title, message: n.message, time: new Date(n.created_at).toLocaleString(), read: n.is_read, sent_by: n.sent_by })))
           }
         }
-      } catch {}
+      } catch (error) {
+        console.error('Error refreshing notifications:', error)
+      }
     }
     refreshNotifications()
   }, [activeTab, userId])
@@ -150,13 +164,15 @@ export default function StudentDashboard() {
     const refreshJobs = async () => {
       try {
         if (activeTab === 'jobs') {
-          const res = await fetch(`${API_BASE}/api/v1/jobs`)
+          const res = await fetch(`${API_BASE}/api/v1/tpo/jobs?status=Active`)
           if (res.ok) {
             const rows = await res.json()
             setJobListings(rows)
           }
         }
-      } catch {}
+      } catch (error) {
+        console.error('Error refreshing jobs:', error)
+      }
     }
     refreshJobs()
   }, [activeTab])
@@ -171,10 +187,29 @@ export default function StudentDashboard() {
             setEvents(rows)
           }
         }
-      } catch {}
+      } catch (error) {
+        console.error('Error refreshing events:', error)
+      }
     }
     refreshEvents()
   }, [activeTab])
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      if (userId) {
+        try {
+          const res = await fetch(`${API_BASE}/api/v1/jobs/applications/user/${userId}`)
+          if (res.ok) {
+            const apps = await res.json()
+            setAppliedJobIds(new Set(apps.map((a:any) => a.job_id)))
+          }
+        } catch {}
+      }
+    }
+    if (activeTab === 'jobs') {
+        fetchApplications()
+    }
+  }, [userId, activeTab])
 
   useEffect(() => {
     const applyRole = async () => {
@@ -202,6 +237,23 @@ export default function StudentDashboard() {
           about: profile.about || null,
         })
       })
+
+      // Update placement status
+      if (profile.placementStatus === 'Placed') {
+          if (!profile.companyName) { alert('Company Name is required'); return }
+          if (!profile.offerLetterUrl) { alert('Offer Letter upload is required'); return }
+      }
+
+      await fetch(`${API_BASE}/api/v1/student/placement/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            placement_status: profile.placementStatus,
+            company_name: profile.placementStatus === 'Placed' ? profile.companyName : null,
+            offer_letter_url: profile.placementStatus === 'Placed' ? profile.offerLetterUrl : null
+        })
+      })
+
       // Also update name in users table if changed
       const [firstName, ...rest] = (profile.name || '').split(' ')
       const lastName = rest.join(' ')
@@ -210,9 +262,12 @@ export default function StudentDashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ first_name: firstName || null, last_name: lastName || null, phone_number: profile.phone || null })
       })
+      
+      alert('Profile saved successfully!')
       setIsEditing(false)
     } catch (e) {
-      setIsEditing(false)
+      console.error(e)
+      alert('Failed to save profile. Please try again.')
     }
   }
 
@@ -365,6 +420,48 @@ export default function StudentDashboard() {
       setCertificateFile(null)
       setCertProgress(0)
     } catch (e) {}
+  }
+
+  const handleOfferLetterUpload = async (file: File | null) => {
+    try {
+      if (!userId || !file) return
+      if (file.size > 50 * 1024) {
+          alert('File size exceeds 50KB limit')
+          return
+      }
+      if (file.type !== 'application/pdf' && !file.type.startsWith('image/')) {
+          alert('Only PDF and Image files are allowed')
+          return
+      }
+      const form = new FormData()
+      form.append('user_id', String(userId))
+      form.append('file_type', 'offer_letter')
+      form.append('file', file)
+      let res = await postFormDataWithProgress(`${API_BASE}/api/v1/files/upload-r2-multipart`, form, setOfferProgress)
+      if (!res.ok) {
+        const base64 = await toBase64(file)
+        res = await postJSONWithProgress(`${API_BASE}/api/v1/files/upload-r2`, { // Use upload-r2 directly as fallback
+          user_id: userId,
+          file_name: file.name,
+          mime_type: file.type,
+          file_type: 'offer_letter',
+          content_base64: base64
+        }, setOfferProgress)
+        if (!res.ok) throw new Error('Failed to upload offer letter')
+      }
+      try {
+        const saved = await res.json()
+        setUserFiles(prev => [saved, ...prev])
+        setProfile(prev => ({ ...prev, offerLetterUrl: saved.file_url }))
+      } catch {
+        const filesRes = await fetch(`${API_BASE}/api/v1/files/by-user/${userId}`)
+        if (filesRes.ok) setUserFiles(await filesRes.json())
+      }
+      setOfferLetterFile(null)
+      setOfferProgress(0)
+    } catch (e) {
+        alert('Upload failed')
+    }
   }
 
   return (
@@ -560,6 +657,47 @@ export default function StudentDashboard() {
                       </div>
                     </div>
                   </div>
+
+                  <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <h3 className="text-lg font-semibold mb-4 text-maroon">Placement Status</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="placementStatus">Status</Label>
+                        {isEditing ? (
+                          <select 
+                            id="placementStatus"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={profile.placementStatus}
+                            onChange={(e) => setProfile({...profile, placementStatus: e.target.value})}
+                          >
+                            <option value="Not Placed">Not Placed</option>
+                            <option value="Placed">Placed</option>
+                          </select>
+                        ) : (
+                          <div className="mt-2">
+                            <Badge variant={profile.placementStatus === 'Placed' ? 'default' : 'secondary'} className={profile.placementStatus === 'Placed' ? 'bg-green-600' : ''}>
+                              {profile.placementStatus}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      {profile.placementStatus === 'Placed' && (
+                        <div>
+                          <Label htmlFor="companyName">Company Name</Label>
+                          {isEditing ? (
+                            <Input 
+                              id="companyName"
+                              value={profile.companyName}
+                              onChange={(e) => setProfile({...profile, companyName: e.target.value})}
+                              placeholder="Enter company name"
+                            />
+                          ) : (
+                            <p className="mt-1 font-medium">{profile.companyName || 'Not specified'}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">Documents</h3>
@@ -596,12 +734,13 @@ export default function StudentDashboard() {
                             <div className="flex items-center">
                               <FileText className="h-8 w-8 text-maroon mr-3" />
                               <div>
-                                <h4 className="font-medium">Certificates</h4>
-                                <p className="text-sm text-gray-500">3 files</p>
+                                <h4 className="font-medium">{profile.placementStatus === 'Placed' ? 'Offer Letter' : 'Certificates'}</h4>
+                                <p className="text-sm text-gray-500">{profile.placementStatus === 'Placed' ? '1 file' : '3 files'}</p>
                               </div>
                             </div>
                             <Button size="sm" variant="outline" onClick={()=>{
-                              const latest = userFiles.find((x)=> x.file_type==='certificate')
+                              const type = profile.placementStatus === 'Placed' ? 'offer_letter' : 'certificate'
+                              const latest = userFiles.find((x)=> x.file_type === type)
                               if (latest) {
                                 if (latest.file_url) {
                                   const url = `${API_BASE}/api/v1/files/${latest.id}/download`
@@ -610,7 +749,7 @@ export default function StudentDashboard() {
                                 } else {
                                   openFile(latest.id)
                                 }
-                              } else alert('No certificate uploaded yet')
+                              } else alert(`No ${type === 'offer_letter' ? 'offer letter' : 'certificate'} uploaded yet`)
                             }}>View</Button>
                           </div>
                         </CardContent>
@@ -624,7 +763,7 @@ export default function StudentDashboard() {
                           <input id="resumeUpload" type="file" onChange={(e)=>{
                             const f=e.target.files?.[0]||null;
                             if (!f) { setResumeFile(null); return }
-                            if (f.type !== 'application/pdf') { alert('Only PDF files are accepted'); e.currentTarget.value=''; setResumeFile(null); return }
+                            if (f.type !== 'application/pdf' && !f.type.startsWith('image/')) { alert('Only PDF and Image files are accepted'); e.currentTarget.value=''; setResumeFile(null); return }
                             if (f.size > 500*1024) { alert('Max file size is 500 KB'); e.currentTarget.value=''; setResumeFile(null); return }
                             setResumeFile(f)
                           }} />
@@ -639,22 +778,42 @@ export default function StudentDashboard() {
                         )}
                       </div>
                       <div>
-                        <Label htmlFor="certUpload">Upload Certificate</Label>
+                        <Label htmlFor="docUpload">{profile.placementStatus === 'Placed' ? 'Upload Offer Letter' : 'Upload Certificate'}</Label>
                         <div className="mt-2 flex items-center gap-2">
-                          <input id="certUpload" type="file" onChange={(e)=>{
+                          <input id="docUpload" type="file" onChange={(e)=>{
                             const f=e.target.files?.[0]||null;
-                            if (!f) { setCertificateFile(null); return }
-                            if (f.type !== 'application/pdf') { alert('Only PDF files are accepted'); e.currentTarget.value=''; setCertificateFile(null); return }
-                            if (f.size > 500*1024) { alert('Max file size is 500 KB'); e.currentTarget.value=''; setCertificateFile(null); return }
-                            setCertificateFile(f)
+                            if (!f) { 
+                                if (profile.placementStatus === 'Placed') setOfferLetterFile(null)
+                                else setCertificateFile(null)
+                                return 
+                            }
+                            // 50KB limit for offer letters as per requirements
+                            const limit = profile.placementStatus === 'Placed' ? 50*1024 : 500*1024
+                            const isImage = f.type.startsWith('image/')
+                            const isPdf = f.type === 'application/pdf'
+                            
+                            if (!isPdf && !isImage) { alert('Only PDF and Image files are accepted'); e.currentTarget.value=''; return }
+                            if (f.size > limit) { alert(`Max file size is ${limit/1024} KB`); e.currentTarget.value=''; return }
+                            
+                            if (profile.placementStatus === 'Placed') setOfferLetterFile(f)
+                            else setCertificateFile(f)
                           }} />
-                          <Button size="sm" variant="outline" onClick={()=>handleCertificateUpload(certificateFile, certificateFile?.name || '')}>Submit</Button>
+                          <Button size="sm" variant="outline" onClick={()=>{
+                              if (profile.placementStatus === 'Placed') handleOfferLetterUpload(offerLetterFile)
+                              else handleCertificateUpload(certificateFile, certificateFile?.name || '')
+                          }}>Submit</Button>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">Note: Only PDF files up to 500 KB are accepted. Upload all certificates in one PDF file only.</p>
-                        {certProgress > 0 && (
+                        <p className="text-xs text-gray-600 mt-1">Note: PDF and Image files up to {profile.placementStatus === 'Placed' ? '50 KB' : '500 KB'} are accepted.</p>
+                        {certProgress > 0 && profile.placementStatus !== 'Placed' && (
                           <div className="mt-2 h-2 w-full bg-gray-200 rounded">
                             <div className="h-2 bg-gold rounded" style={{ width: `${certProgress}%` }} />
                             <p className="text-xs text-gray-600 mt-1">{certProgress}%</p>
+                          </div>
+                        )}
+                        {offerProgress > 0 && profile.placementStatus === 'Placed' && (
+                          <div className="mt-2 h-2 w-full bg-gray-200 rounded">
+                            <div className="h-2 bg-gold rounded" style={{ width: `${offerProgress}%` }} />
+                            <p className="text-xs text-gray-600 mt-1">{offerProgress}%</p>
                           </div>
                         )}
                       </div>
@@ -698,28 +857,88 @@ export default function StudentDashboard() {
                               <p className="text-gray-600">{job.company} • {job.location}</p>
                             </div>
                             <Badge variant="secondary" className="bg-gold text-maroon">
-                              {job.type}
+                              {job.job_type || job.type}
                             </Badge>
                           </div>
+                          <div className="mt-2 text-sm text-gray-500">
+                            <span>Posted: {job.posted ? new Date(job.posted).toLocaleString() : '—'}</span>
+                            {job.deadline && <span className="ml-4">Deadline: {new Date(job.deadline).toLocaleDateString()}</span>}
+                          </div>
+                          {job.salary && (
+                            <div className="mt-3">
+                              <p className="text-sm text-gray-700"><span className="font-medium">Salary Range:</span> {job.salary}</p>
+                            </div>
+                          )}
+                          <div className="mt-4">
+                            <p className="font-medium text-gray-800 mb-2">Job Description</p>
+                            <p className="text-gray-700 whitespace-pre-wrap">{job.description || '—'}</p>
+                          </div>
+                          <div className="mt-4">
+                            <p className="font-medium text-gray-800 mb-2">Requirements / Qualifications</p>
+                            <p className="text-gray-700 whitespace-pre-wrap">{job.requirements || '—'}</p>
+                          </div>
+                          {job.job_url && (
+                            <div className="mt-3">
+                              <p className="font-medium text-gray-800 mb-1">Application URL</p>
+                              <a className="underline text-maroon break-all" href={job.job_url} target="_blank" rel="noreferrer">{job.job_url}</a>
+                            </div>
+                          )}
                           <div className="mt-6 flex space-x-3">
-                            <Button className="bg-maroon hover:bg-maroon/90" onClick={async()=>{
-                              try {
-                                const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
-                                const current = stored ? JSON.parse(stored) : null
-                                const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current?.email)}`)
-                                if (userRes.ok) {
-                                  const u = await userRes.json()
-                                  await fetch(`${API_BASE}/api/v1/jobs/${job.id}/apply`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: u.id }) })
-                                  alert('Applied successfully')
-                                  if (job.job_url) {
-                                    const w = window.open(job.job_url, '_blank')
-                                    if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
-                                  }
-                                }
-                              } catch { alert('Failed to apply') }
-                            }}>Apply Now</Button>
+                            {appliedJobIds.has(job.id) ? (
+                              <Button 
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={async()=>{
+                                  try {
+                                    const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+                                    const current = stored ? JSON.parse(stored) : null
+                                    const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current?.email)}`)
+                                    if (userRes.ok) {
+                                      const u = await userRes.json()
+                                      if (job.job_url) {
+                                        const w = window.open(job.job_url, '_blank')
+                                        if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
+                                      }
+                                    }
+                                  } catch { /* silently fail */ }
+                                }}
+                              >
+                                Applied
+                              </Button>
+                            ) : (
+                              <Button 
+                                className="bg-maroon hover:bg-maroon/90"
+                                onClick={async()=>{
+                                  try {
+                                    const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+                                    const current = stored ? JSON.parse(stored) : null
+                                    const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current?.email)}`)
+                                    if (userRes.ok) {
+                                      const u = await userRes.json()
+                                      const res = await fetch(`${API_BASE}/api/v1/jobs/${job.id}/apply`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: u.id }) })
+                                      if (res.ok) {
+                                          alert('Applied successfully')
+                                          setAppliedJobIds(prev => {
+                                              const next = new Set(prev)
+                                              next.add(job.id)
+                                              return next
+                                          })
+                                          if (job.job_url) {
+                                              const w = window.open(job.job_url, '_blank')
+                                              if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
+                                          }
+                                      } else {
+                                          const err = await res.json()
+                                          alert(err.error || 'Failed to apply')
+                                      }
+                                    }
+                                  } catch { alert('Failed to apply') }
+                                }}
+                              >
+                                Apply Now
+                              </Button>
+                            )}
                             {job.job_url && (
-                              <Button variant="outline" onClick={()=>{ const w = window.open(job.job_url, '_blank'); if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() } }}>Open Job Link</Button>
+                              <Button variant="outline" onClick={()=>{ const w = window.open(job.job_url!, '_blank'); if (!w) { const a=document.createElement('a'); a.href=job.job_url!; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() } }}>Open Job Link</Button>
                             )}
                           </div>
                         </CardContent>
@@ -766,31 +985,39 @@ export default function StudentDashboard() {
                               <Badge className="bg-gray-100 text-gray-800">{event.category}</Badge>
                             </div>
                           )}
-                          {event.form_url && (
-                            <div className="flex items-center text-gray-600">
-                              <a
-                                className="underline text-maroon"
-                                href={event.form_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={async (e)=>{
-                                  try {
-                                    e.preventDefault()
-                                    const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
-                                    const current = stored ? JSON.parse(stored) : null
-                                    const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current?.email)}`)
-                                    if (userRes.ok) {
-                                      const u = await userRes.json()
-                                      await fetch(`${API_BASE}/api/v1/events/${event.id}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: u.id, email: current?.email, clerkUserId: (user as any)?.id || null }) })
-                                    }
-                                  } catch {}
-                                  const w = window.open(event.form_url, '_blank')
-                                  if (!w) { const a=document.createElement('a'); a.href=event.form_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
-                                }}
-                              >Google Form</a>
-                            </div>
-                          )}
                         </div>
+                        <div className="mt-3 text-sm text-gray-500">
+                          <span>Posted: {event.created_at ? new Date(event.created_at).toLocaleString() : '—'}</span>
+                        </div>
+                        <div className="mt-4">
+                          <p className="font-medium text-gray-800 mb-2">Description / Agenda</p>
+                          <p className="text-gray-700 whitespace-pre-wrap">{event.description || '—'}</p>
+                        </div>
+                        {event.form_url && (
+                          <div className="mt-3">
+                            <p className="font-medium text-gray-800 mb-1">Attachments / Resources</p>
+                            <a
+                              className="underline text-maroon break-all"
+                              href={event.form_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={async (e)=>{
+                                try {
+                                  e.preventDefault()
+                                  const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+                                  const current = stored ? JSON.parse(stored) : null
+                                  const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current?.email)}`)
+                                  if (userRes.ok) {
+                                    const u = await userRes.json()
+                                    await fetch(`${API_BASE}/api/v1/events/${event.id}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: u.id, email: current?.email, clerkUserId: (user as any)?.id || null }) })
+                                  }
+                                } catch {}
+                                const w = window.open(event.form_url!, '_blank')
+                                if (!w) { const a=document.createElement('a'); a.href=event.form_url!; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
+                              }}
+                            >Open Link</a>
+                          </div>
+                        )}
                         
                         <div className="mt-6">
                           <Button className="w-full bg-maroon hover:bg-maroon/90" disabled={(event.status||'Upcoming')!=='Upcoming'} onClick={async()=>{
@@ -808,14 +1035,27 @@ export default function StudentDashboard() {
                                 const payload = { user_id: u.id, email: current?.email, clerkUserId: (user as any)?.id || null }
                                 let r = await fetch(`${API_BASE}/api/v1/events/${event.id}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
                                 if (!r.ok) {
-                                  // Fallback: try with email only
-                                  const payload2 = { email: current?.email }
-                                  r = await fetch(`${API_BASE}/api/v1/events/${event.id}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload2) })
-                                  if (!r.ok) {
-                                    try { const t = await r.text(); console.error('Register failed:', t) } catch {}
+                                    // Fallback: try with email only
+                                    const payload2 = { email: current?.email }
+                                    r = await fetch(`${API_BASE}/api/v1/events/${event.id}/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload2) })
+                                    if (!r.ok) {
+                                      try { 
+                                        const err = await r.json(); 
+                                        alert(err.detail || 'Failed to register');
+                                        console.error('Register failed:', err) 
+                                      } catch {
+                                        alert('Failed to register');
+                                      }
+                                    } else {
+                                      alert('Successfully registered!');
+                                      // Refresh events to update status
+                                      window.location.reload(); 
+                                    }
+                                  } else {
+                                    alert('Successfully registered!');
+                                    window.location.reload();
                                   }
                                 }
-                              }
                             } catch { alert('Failed to register') }
                           }}>Register</Button>
                         </div>
@@ -841,11 +1081,18 @@ export default function StudentDashboard() {
                     >
                       <CardContent className="p-6">
                         <div className="flex justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold">{notification.title}</h3>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-lg font-semibold">{notification.title}</h3>
+                              {notification.sent_by && (
+                                <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                  From TPO
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-gray-600 mt-1">{notification.message}</p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-right ml-4">
                             <p className="text-sm text-gray-500">{notification.time}</p>
                             {!notification.read && (
                               <Badge variant="secondary" className="mt-2 bg-maroon text-white">
@@ -863,66 +1110,88 @@ export default function StudentDashboard() {
             
             {activeTab === 'ai-tools' && (
               <div>
-                <h2 className="text-2xl font-bold text-maroon mb-6">AI Career Tools</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card className="border-none shadow-md">
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        
-                        Resume Scoring
-                      </CardTitle>
-                      <CardDescription>
-                        Get instant feedback on your resume with AI-powered analysis
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-4">
-                        Upload your resume to receive a detailed analysis of your strengths and areas for improvement.
-                      </p>
-                      <Button className="w-full bg-maroon hover:bg-maroon/90">
-                        Launch Resume Scorer
-                      </Button>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="border-none shadow-md">
-                    <CardHeader>
-                      <CardTitle className="flex items-center">
-                        
-                        Mock Interview
-                      </CardTitle>
-                      <CardDescription>
-                        Practice interviews with our AI-powered interviewer
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="mb-4">
-                        Prepare for real interviews with personalized questions and feedback.
-                      </p>
-                      <Button className="w-full bg-maroon hover:bg-maroon/90">
-                        Start Mock Interview
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-                
-                <div className="mt-8">
-                  <Card className="border-none shadow-md">
-                    <CardHeader>
-                      <CardTitle>How to Use AI Tools</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ol className="list-decimal list-inside space-y-2">
-                        <li>Select the tool you want to use from above</li>
-                        <li>Click the "Launch" button to open the tool in a new window</li>
-                        <li>Follow the on-screen instructions to complete your assessment</li>
-                        <li>Review your results and recommendations</li>
-                        <li>Save or download your results for future reference</li>
-                      </ol>
-                    </CardContent>
-                  </Card>
-                </div>
+                {!activeTool ? (
+                  <>
+                    <h2 className="text-2xl font-bold text-maroon mb-6">AI Career Tools</h2>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            Resume Scoring
+                          </CardTitle>
+                          <CardDescription>
+                            Get instant feedback on your resume with AI-powered analysis
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="mb-4">
+                            Upload your resume to receive a detailed analysis of your strengths and areas for improvement.
+                          </p>
+                          <Button 
+                            className="w-full bg-maroon hover:bg-maroon/90"
+                            onClick={() => setActiveTool('resume-scorer')}
+                          >
+                            Launch Resume Scorer
+                          </Button>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle className="flex items-center">
+                            Mock Interview
+                          </CardTitle>
+                          <CardDescription>
+                            Practice interviews with our AI-powered interviewer
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="mb-4">
+                            Prepare for real interviews with personalized questions and feedback.
+                          </p>
+                          <Button 
+                            className="w-full bg-maroon hover:bg-maroon/90"
+                            onClick={() => setActiveTool('mock-interview')}
+                          >
+                            Start Mock Interview
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <div className="mt-8">
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle>How to Use AI Tools</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ol className="list-decimal list-inside space-y-2">
+                            <li>Select the tool you want to use from above</li>
+                            <li>Click the "Launch" button to open the tool</li>
+                            <li>Follow the on-screen instructions to complete your assessment</li>
+                            <li>Review your results and recommendations</li>
+                          </ol>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {activeTool === 'resume-scorer' && (
+                      <ResumeScorer 
+                        userFiles={userFiles} 
+                        onBack={() => setActiveTool(null)} 
+                      />
+                    )}
+                    {activeTool === 'mock-interview' && (
+                      <MockInterview 
+                        userFiles={userFiles}
+                        onBack={() => setActiveTool(null)} 
+                      />
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>

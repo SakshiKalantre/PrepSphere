@@ -8,7 +8,7 @@ export function getChatReply(input: string): string | null {
     studentDashboard: '/dashboard/student',
     tpoDashboard: '/dashboard/tpo',
     adminDashboard: '/dashboard/admin',
-    apiDocs: 'http://localhost:8001/docs'
+    apiDocs: 'http://localhost:8000/docs'
   }
 
   const contact = {

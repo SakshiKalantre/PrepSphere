@@ -5,12 +5,12 @@ from app.db.session import Base
 from enum import Enum as PyEnum
 
 class ApplicationStatus(str, PyEnum):
-    PENDING = "pending"
-    REVIEWED = "reviewed"
-    SHORTLISTED = "shortlisted"
-    ACCEPTED = "accepted"
-    REJECTED = "rejected"
-    WITHDRAWN = "withdrawn"
+    PENDING = "PENDING"
+    REVIEWED = "REVIEWED"
+    SHORTLISTED = "SHORTLISTED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
 
 class Job(Base):
     __tablename__ = "jobs"
@@ -22,7 +22,9 @@ class Job(Base):
     description = Column(Text, nullable=False)
     requirements = Column(Text, nullable=False)
     salary_range = Column(String, nullable=True)
+    salary = Column(String, nullable=True)  # Extended field
     job_type = Column(String, nullable=True)  # Full-time, Internship, etc.
+    type = Column(String, nullable=True)  # Extended field
     application_deadline = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, default=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # TPO user

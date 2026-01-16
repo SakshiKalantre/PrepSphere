@@ -8,6 +8,7 @@ class EventBase(BaseModel):
     location: str
     event_date: datetime
     event_time: str
+    status: Optional[str] = "Upcoming"
 
 class EventCreate(EventBase):
     created_by: int
@@ -18,12 +19,14 @@ class EventUpdate(BaseModel):
     location: Optional[str] = None
     event_date: Optional[datetime] = None
     event_time: Optional[str] = None
+    status: Optional[str] = None
     is_active: Optional[bool] = None
 
 class EventResponse(EventBase):
     id: int
+    status: str
     is_active: bool
-    created_by: int
+    created_by: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
     

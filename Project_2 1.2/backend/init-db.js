@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(255) UNIQUE NOT NULL,
   first_name VARCHAR(255) NOT NULL,
   last_name VARCHAR(255) NOT NULL,
-  phone_number VARCHAR(20),
+  phone_number VARCHAR(50),
   role VARCHAR(50) DEFAULT 'student',
   is_active BOOLEAN DEFAULT true,
   is_approved BOOLEAN DEFAULT false,

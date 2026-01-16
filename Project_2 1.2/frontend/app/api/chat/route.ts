@@ -15,26 +15,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: "I'm configured to answer site questions and guide you. Ask me about sign-in, sign-up, dashboards, jobs, or events." });
     }
     const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${key}`,
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${key}`
+        },
         body: JSON.stringify({
-          contents: [
+          model: "google/gemini-2.0-flash-001",
+          messages: [
             {
-              parts: [
-                {
-                  text: `You are a helpful AI assistant for PrepSphere, a college placement management system. Be concise, friendly, and professional.\n\nUser message: ${message}`,
-                },
-              ],
+              role: "system",
+              content: "You are a helpful AI assistant for PrepSphere, a college placement management system. Be concise, friendly, and professional."
             },
+            {
+              role: "user",
+              content: message
+            }
           ],
-          generationConfig: {
-            temperature: 0.7,
-            topK: 40,
-            topP: 0.95,
-            maxOutputTokens: 1024,
-          },
+          temperature: 0.7,
+          top_p: 0.95,
+          max_tokens: 1024
         }),
       }
     );
@@ -43,7 +45,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: fallback });
     }
     const data = await res.json();
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No response.";
+    const reply = data.choices?.[0]?.message?.content ?? "No response.";
     return NextResponse.json({ reply });
   } catch {
     const fallback = "I encountered an error. Here’s what I can help with: Sign Up/Sign In (Student social login; TPO/Admin manual), role-based dashboards, jobs and events. Ask me a question like 'How do I sign up as a student?'"
