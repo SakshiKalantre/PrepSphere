@@ -33,6 +33,25 @@ import {
   MessageCircle
 } from 'lucide-react'
 
+// Chart Components
+import {
+  AreaChart,
+  BarChart as RechartsBarChart,
+  PieChart as RechartsPieChart,
+  LineChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Area,
+  Bar,
+  Line,
+  Pie,
+  Cell,
+  ResponsiveContainer
+} from 'recharts'
+
 const API_BASE_DEFAULT = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
 export default function TPODashboard() {
@@ -98,6 +117,83 @@ export default function TPODashboard() {
     total_placed: 0,
     applications_by_job: []
   })
+  
+  // Analytics state for TPO dashboard
+  const [tpoAnalytics, setTpoAnalytics] = useState<any>({
+    activeJobs: 0,
+    inactiveJobs: 0,
+    placedStudents: 0,
+    unplacedStudents: 0,
+    totalEvents: 0,
+    upcomingEvents: 0,
+    completedEvents: 0,
+    cancelledEvents: 0,
+    totalRegistrations: 0,
+    placementPercentage: 0,
+    totalStudents: 0,
+    totalApplicants: 0,
+    totalJobs: 0,
+    yearlyPlacementData: [],
+    eventRegistrationRateData: [],
+    monthlyRegistrationCount: 0,
+    monthlyTrendData: []
+  })
+  const [analyticsView, setAnalyticsView] = useState('job') // 'job' or 'event'
+
+  // Define chart data and colors
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
+  const PLACEMENT_COLORS = ['#0088FE', '#FF8042'];
+  const JOB_STATUS_COLORS = ['#00C49F', '#FFBB28'];
+  
+  // Get chart data - will be updated with real data from fetchTpoAnalytics
+  const yearlyPlacementData = tpoAnalytics.yearlyPlacementData || [
+    { year: '2020', placed: 0, unplaced: 0 },
+    { year: '2021', placed: 0, unplaced: 0 },
+    { year: '2022', placed: 0, unplaced: 0 },
+    { year: '2023', placed: 0, unplaced: 0 },
+    { year: '2024', placed: 0, unplaced: 0 },
+  ];
+  
+  const placedUnplacedData = [
+    { name: 'Placed', value: tpoAnalytics.placedStudents || 0 },
+    { name: 'Unplaced', value: tpoAnalytics.unplacedStudents || 0 },
+  ];
+  
+  const activeInactiveData = [
+    { name: 'Active', value: tpoAnalytics.activeJobs || 0 },
+    { name: 'Inactive', value: tpoAnalytics.inactiveJobs || 0 },
+  ];
+  
+  const eventRegistrationRateData = tpoAnalytics.eventRegistrationRateData || [
+    { month: 'Jan', rate: 0 },
+    { month: 'Feb', rate: 0 },
+    { month: 'Mar', rate: 0 },
+    { month: 'Apr', rate: 0 },
+    { month: 'May', rate: 0 },
+    { month: 'Jun', rate: 0 },
+  ];
+  
+  // Create recent placements data from approved students
+  const recentPlacements: any[] = approvedStudents
+    .filter((student: any) => student.placement_status === 'Placed')
+    .slice(0, 5)
+    .map((student: any) => ({
+      id: student.id,
+      studentName: `${student.first_name} ${student.last_name}`,
+      company: student.company_name || 'N/A',
+      position: student.position || 'N/A'
+    }));
+  
+  // Create recent events data
+  const recentEvents: any[] = tpoEvents
+    .slice(0, 5)
+    .map((event: any) => ({
+      id: event.id,
+      title: event.title,
+      date: event.event_date ? new Date(event.event_date).toLocaleDateString() : 'N/A',
+      location: event.location || 'N/A',
+      status: event.status || 'N/A'
+    }));
 
   const fetchTpoAndData = async () => {
     try {
@@ -189,12 +285,193 @@ export default function TPODashboard() {
     } catch {}
   }
 
+  const fetchTpoAnalytics = async () => {
+    try {
+      // Fetch job analytics data
+      const jobsRes = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/jobs`)
+      let activeJobs = 0
+      let inactiveJobs = 0
+      let jobsData = [];
+      
+      if (jobsRes.ok) {
+        jobsData = await jobsRes.json()
+        activeJobs = jobsData.filter((job: any) => job.status === 'Active' || job.is_active).length
+        inactiveJobs = jobsData.length - activeJobs
+      }
+      
+      // Fetch placed students data
+      const placedStudents = approvedStudents.filter((student: any) => 
+        student.placement_status === 'Placed' || student.has_verified_offer_letter
+      ).length
+      const unplacedStudents = approvedStudents.length - placedStudents
+      
+      // Fetch event data
+      const eventsRes = await fetch(`${API_BASE_DEFAULT}/api/v1/events`)
+      let totalEvents = 0
+      let upcomingEvents = 0
+      let completedEvents = 0
+      let cancelledEvents = 0
+      let totalRegistrations = 0
+      let eventsData = [];
+      
+      if (eventsRes.ok) {
+        eventsData = await eventsRes.json()
+        totalEvents = eventsData.length
+        upcomingEvents = eventsData.filter((event: any) => event.status === 'Upcoming').length
+        completedEvents = eventsData.filter((event: any) => event.status === 'Completed').length
+        cancelledEvents = eventsData.filter((event: any) => event.status === 'Cancelled').length
+        
+        // Fetch event registrations to calculate total registrations
+        for (const event of eventsData) {
+          try {
+            const regRes = await fetch(`${API_BASE_DEFAULT}/api/v1/events/${event.id}/registrations`)
+            if (regRes.ok) {
+              const regs = await regRes.json()
+              totalRegistrations += regs.length
+            }
+          } catch (err) {
+            // If registration endpoint doesn't exist, skip
+          }
+        }
+      }
+      
+      // Calculate placement percentage - using the same formula as admin dashboard
+      // Formula: (placed_students / total_students) * 100
+      const placementPercentage = stats.total_students > 0 
+        ? Math.round((placedStudents / stats.total_students) * 100) 
+        : 0
+      
+      // Get the total values from the existing stats
+      const totalStudents = stats.total_students || approvedStudents.length
+      const totalApplicants = stats.total_applications
+      const totalJobs = stats.total_jobs
+      
+      // Calculate year-wise placement data
+      const startYear = 2024;
+      const endYear = 2028;
+      
+      // For now, we'll create a simplified year-wise data based on student creation dates
+      // This would need to connect to placement records with actual timestamps
+      const yearlyPlacementData = [];
+      for (let year = startYear; year <= endYear; year++) {
+        // Placeholder calculation - would need actual placement dates from DB
+        const placedThisYear = approvedStudents.filter((student: any) => {
+          // This is a simplified check - in reality, we'd need actual placement dates
+          const placementDate = student.placed_date || student.created_at || student.updated_at;
+          return placementDate && new Date(placementDate).getFullYear() === year && 
+                 (student.placement_status === 'Placed' || student.has_verified_offer_letter);
+        }).length;
+        
+        // Calculate unplaced for this year
+        const allStudentsThisYear = approvedStudents.filter((student: any) => {
+          const creationDate = student.created_at;
+          return creationDate && new Date(creationDate).getFullYear() === year;
+        });
+        const unplacedThisYear = allStudentsThisYear.length - placedThisYear;
+        
+        yearlyPlacementData.push({
+          year: year.toString(),
+          placed: placedThisYear,
+          unplaced: unplacedThisYear
+        });
+      }
+      
+      // Calculate event registration rate by month (September to May)
+      const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
+      const eventRegistrationRateData = [];
+      const monthlyTrendData = [];
+      
+      // Start from September of previous year if current month is before September
+      const currentDate = new Date();
+      let eventStartYear = currentDate.getFullYear();
+      if (currentDate.getMonth() < 8) { // Before September
+        eventStartYear = currentDate.getFullYear() - 1;
+      }
+      
+      for (let i = 0; i < 9; i++) {
+        const monthIndex = (8 + i) % 12; // September (8) to May (4)
+        const monthName = months[i];
+        const year = monthIndex >= 8 ? eventStartYear : eventStartYear + 1; // Previous year for Sep-Dec, current year for Jan-May
+        // Calculate registration data for this month
+        let monthRegistrations = 0;
+        let monthEvents = 0;
+                
+        for (const event of eventsData) {
+          const eventDate = new Date(event.event_date);
+          if (eventDate.getMonth() === monthIndex && eventDate.getFullYear() === year) {
+            monthEvents++;
+            try {
+              const regRes = await fetch(`${API_BASE_DEFAULT}/api/v1/events/${event.id}/registrations`);
+              if (regRes.ok) {
+                const regs = await regRes.json();
+                monthRegistrations += regs.length;
+              }
+            } catch (err) {
+              // If registration endpoint doesn"t exist, skip
+            }
+          }
+        }
+                
+        // Calculate registration rate: (avg registrations per event / total registrations) * 100
+        const avgRegistrationsPerEvent = monthEvents > 0 ? monthRegistrations / monthEvents : 0;
+        const rate = totalRegistrations > 0 ? Math.round((avgRegistrationsPerEvent / totalRegistrations) * 100) : 0;
+                
+        eventRegistrationRateData.push({
+          month: monthName,
+          rate: rate
+        });
+                
+        // Calculate monthly trend data using the specified formula
+        // Formula: (avg per event per month / monthly registration count) * 100
+        const monthlyTrendRate = monthRegistrations > 0 ? Math.round((avgRegistrationsPerEvent / monthRegistrations) * 100) : 0;
+                
+        monthlyTrendData.push({
+          month: monthName,
+          rate: monthlyTrendRate,
+          registrations: monthRegistrations,
+          events: monthEvents
+        });
+      }
+      
+      setTpoAnalytics(prev => ({
+        ...prev,
+        activeJobs,
+        inactiveJobs,
+        placedStudents,
+        unplacedStudents,
+        totalEvents,
+        upcomingEvents,
+        completedEvents,
+        cancelledEvents,
+        totalRegistrations,
+        placementPercentage,
+        totalStudents,
+        totalApplicants,
+        totalJobs,
+        yearlyPlacementData,
+        eventRegistrationRateData,
+        monthlyRegistrationCount: Math.round(totalRegistrations / 12), // Average monthly registrations
+        monthlyTrendData
+      }))
+    } catch (error) {
+      console.error('Error fetching TPO analytics:', error)
+    }
+  }
+
   // Real-time sync for approved students and overview stats
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (activeTab === 'approved' || activeTab === 'overview') {
       fetchTpoAndData()
-      interval = setInterval(fetchTpoAndData, 5000)
+      if (activeTab === 'overview') {
+        fetchTpoAnalytics()
+        interval = setInterval(() => {
+          fetchTpoAndData()
+          fetchTpoAnalytics()
+        }, 5000)
+      } else {
+        interval = setInterval(fetchTpoAndData, 5000)
+      }
     }
     return () => { if (interval) clearInterval(interval) }
   }, [activeTab])
@@ -590,123 +867,438 @@ export default function TPODashboard() {
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Active Jobs</CardTitle>
-                      <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.total_jobs}</div>
-                      <p className="text-xs text-muted-foreground">Currently active postings</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Applicants</CardTitle>
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.total_applications}</div>
-                      <p className="text-xs text-muted-foreground">Across all active jobs</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.total_students}</div>
-                      <p className="text-xs text-muted-foreground">Approved profiles</p>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Placed Students</CardTitle>
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.total_placed}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {stats.total_students ? Math.round((stats.total_placed / stats.total_students) * 100) : 0}% placement rate
-                      </p>
-                    </CardContent>
-                  </Card>
-                  {/* Hidden per user request: Total Jobs Card. Controlled by showHiddenStats state. */}
-                  <Card style={{ display: showHiddenStats ? undefined : 'none' }}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Total Jobs</CardTitle>
-                      <Briefcase className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.total_jobs}</div>
-                      <p className="text-xs text-muted-foreground">Active listings</p>
-                    </CardContent>
-                  </Card>
-                  {/* Hidden per user request: Applications Card. Controlled by showHiddenStats state. */}
-                  <Card style={{ display: showHiddenStats ? undefined : 'none' }}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Applications</CardTitle>
-                      <BarChart className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-bold">{stats.total_applications}</div>
-                      <p className="text-xs text-muted-foreground">{stats.total_selected} selected</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Applications by Job</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {stats.applications_by_job.slice(0, 5).map((job:any) => (
-                          <div key={job.id} className="flex items-center">
-                            <div className="ml-4 space-y-1 flex-1">
-                              <p className="text-sm font-medium leading-none">{job.title}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {job.selected} selected / {job.applications} applicants
-                              </p>
-                            </div>
-                            <div className="font-medium">
-                              {job.applications > 0 ? Math.round((job.selected / job.applications) * 100) : 0}%
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
+                {/* Analytics Toggle */}
+                <div className="mb-8">
+                  <div className="flex space-x-4 mb-6">
+                    <Button 
+                      variant={analyticsView === 'job' ? 'default' : 'outline'} 
+                      className={`${analyticsView === 'job' ? 'bg-maroon hover:bg-maroon/90 border-maroon' : 'text-maroon border-maroon'} `}
+                      onClick={() => setAnalyticsView('job')}
+                    >
+                      Job Analytics
+                    </Button>
+                    <Button 
+                      variant={analyticsView === 'event' ? 'default' : 'outline'} 
+                      className={`${analyticsView === 'event' ? 'bg-maroon hover:bg-maroon/90 border-maroon' : 'text-maroon border-maroon'} `}
+                      onClick={() => setAnalyticsView('event')}
+                    >
+                      Event Analytics
+                    </Button>
+                  </div>
                   
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Recent Placements</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {approvedStudents.filter((s:any) => s.placement_status === 'Placed').slice(0, 5).map((student:any) => (
-                          <div key={student.user_id} className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
-                              <div className="bg-green-100 p-2 rounded-full">
-                                <CheckCircle className="h-4 w-4 text-green-600" />
-                              </div>
+                  {/* Job Analytics View */}
+                  {analyticsView === 'job' && (
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-sm font-medium leading-none">{student.first_name} {student.last_name}</p>
-                                <p className="text-sm text-muted-foreground">{student.company_name || 'Placed'}</p>
+                                <p className="text-gray-600">Active Jobs</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.activeJobs}</h3>
                               </div>
+                              <Briefcase className="h-10 w-10 text-gold" />
                             </div>
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Placed</Badge>
-                          </div>
-                        ))}
-                        {approvedStudents.filter((s:any) => s.placement_status === 'Placed').length === 0 && (
-                          <p className="text-muted-foreground text-center py-4">No recent placements</p>
-                        )}
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Inactive Jobs</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.inactiveJobs}</h3>
+                              </div>
+                              <Briefcase className="h-10 w-10 text-gray-400" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Placed Students</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.placedStudents}</h3>
+                              </div>
+                              <CheckCircle className="h-10 w-10 text-green-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Unplaced Students</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.unplacedStudents}</h3>
+                              </div>
+                              <Users className="h-10 w-10 text-red-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
                       </div>
-                    </CardContent>
-                  </Card>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Total Jobs</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalJobs || stats.total_jobs}</h3>
+                              </div>
+                              <Briefcase className="h-10 w-10 text-purple-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Total Applications</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalApplicants || stats.total_applications}</h3>
+                              </div>
+                              <Users className="h-10 w-10 text-blue-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Placement Rate</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.placementPercentage}%</h3>
+                              </div>
+                              <BarChart className="h-10 w-10 text-green-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Total Students</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalStudents || stats.total_students}</h3>
+                              </div>
+                              <Users className="h-10 w-10 text-indigo-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle>Year-wise Placement Trends</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <RechartsBarChart data={yearlyPlacementData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="year" />
+                                <YAxis />
+                                <Tooltip />
+                                <Legend />
+                                <Bar dataKey="placed" fill="#8884d8" name="Placed Students" />
+                                <Bar dataKey="unplaced" fill="#ff8042" name="Unplaced Students" />
+                              </RechartsBarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="border-none shadow-md">
+                          <CardHeader>
+                            <CardTitle>Placed vs Unplaced Students</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="h-64">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPieChart>
+                                  <Pie
+                                    data={placedUnplacedData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={60}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={(props) => {
+                                      const { name, percent } = props;
+                                      return `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`;
+                                    }}
+                                  >
+                                    {placedUnplacedData.map((entry: any, index: number) => (
+                                      <Cell key={`cell-${index}`} fill={PLACEMENT_COLORS[index % PLACEMENT_COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend />
+                                </RechartsPieChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardHeader>
+                            <CardTitle>Active vs Inactive Jobs</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="h-64">
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsPieChart>
+                                  <Pie
+                                    data={activeInactiveData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    outerRadius={60}
+                                    fill="#8884d8"
+                                    dataKey="value"
+                                    label={(props) => {
+                                      const { name, percent } = props;
+                                      return `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`;
+                                    }}
+                                  >
+                                    {activeInactiveData.map((entry: any, index: number) => (
+                                      <Cell key={`cell-${index}`} fill={JOB_STATUS_COLORS[index % JOB_STATUS_COLORS.length]} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip />
+                                  <Legend />
+                                </RechartsPieChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle>Recent Placements</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {recentPlacements.map((placement: any) => (
+                              <div key={placement.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                  <h4 className="font-medium">{placement.studentName}</h4>
+                                  <p className="text-sm text-gray-600">{placement.company} • {placement.position}</p>
+                                </div>
+                                <Badge variant="outline" className="bg-green-100 text-green-800">Placed</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
+                  
+                  {/* Event Analytics View */}
+                  {analyticsView === 'event' && (
+                    <div className="space-y-8">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Total Events</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalEvents}</h3>
+                              </div>
+                              <Calendar className="h-10 w-10 text-gold" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Total Registrations</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalRegistrations}</h3>
+                              </div>
+                              <Users className="h-10 w-10 text-blue-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Avg Registration/Event</p>
+                                <h3 className="text-3xl font-bold text-maroon">
+                                  {tpoAnalytics.totalEvents > 0 
+                                    ? Math.round(tpoAnalytics.totalRegistrations / tpoAnalytics.totalEvents) 
+                                    : 0}
+                                </h3>
+                              </div>
+                              <BarChart className="h-10 w-10 text-green-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Upcoming Events</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.upcomingEvents}</h3>
+                              </div>
+                              <Calendar className="h-10 w-10 text-purple-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Completed Events</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.completedEvents}</h3>
+                              </div>
+                              <CheckCircle className="h-10 w-10 text-green-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Cancelled Events</p>
+                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.cancelledEvents}</h3>
+                              </div>
+                              <XCircle className="h-10 w-10 text-red-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Registration Rate</p>
+                                <h3 className="text-3xl font-bold text-maroon">
+                                  {stats.total_students > 0 
+                                    ? Math.round((tpoAnalytics.totalRegistrations / (tpoAnalytics.totalEvents * stats.total_students || 1)) * 100)
+                                    : 0}%
+                                </h3>
+                              </div>
+                              <Activity className="h-10 w-10 text-orange-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Monthly Reg. Count</p>
+                                <h3 className="text-3xl font-bold text-maroon">
+                                  {tpoAnalytics.monthlyRegistrationCount || 0}
+                                </h3>
+                              </div>
+                              <BarChart className="h-10 w-10 text-purple-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        <Card className="border-none shadow-md">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-gray-600">Active Events</p>
+                                <h3 className="text-3xl font-bold text-maroon">
+                                  {tpoAnalytics.upcomingEvents + tpoAnalytics.completedEvents}
+                                </h3>
+                              </div>
+                              <Calendar className="h-10 w-10 text-indigo-500" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle>Event Registration Rate Trend</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={eventRegistrationRateData}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                <Tooltip formatter={(value) => [`${value}%`, "Registration Rate"]} />
+                                <Legend />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="rate" 
+                                  stroke="#8884d8" 
+                                  strokeWidth={2}
+                                  dot={{ r: 4 }}
+                                  activeDot={{ r: 6 }}
+                                  name="Registration Rate"
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle>Monthly Event Trend</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="h-80">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <RechartsBarChart data={tpoAnalytics.monthlyTrendData || []}>
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                                <Tooltip formatter={(value, name, props) => [
+                                  `${value}%`, 
+                                  "Monthly Trend",
+                                  `Registrations: ${props.payload.registrations}`,
+                                  `Events: ${props.payload.events}`
+                                ]} />
+                                <Legend />
+                                <Bar dataKey="rate" fill="#82ca9d" name="Monthly Trend %" />
+                              </RechartsBarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="border-none shadow-md">
+                        <CardHeader>
+                          <CardTitle>Recent Events</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {recentEvents.map((event: any) => (
+                              <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                  <h4 className="font-medium">{event.title}</h4>
+                                  <p className="text-sm text-gray-600">{event.date} • {event.location}</p>
+                                </div>
+                                <Badge variant="outline" className="capitalize">{event.status}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
