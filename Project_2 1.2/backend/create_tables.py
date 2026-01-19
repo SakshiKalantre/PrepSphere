@@ -17,7 +17,8 @@ try:
         Resume, Certificate,
         Job, JobApplication, ApplicationStatus,
         Event, EventRegistration,
-        FileUpload, Notification, NotificationType
+        FileUpload, Notification, NotificationType,
+        ContactMessage
     )
     
     print("Creating database tables...")
@@ -37,6 +38,7 @@ try:
     print("  8. event_registrations")
     print("  9. file_uploads")
     print(" 10. notifications")
+    print(" 11. contact_messages")
     print("\nAll tables created successfully!")
     
 except ImportError as e:

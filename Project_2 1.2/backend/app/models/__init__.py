@@ -6,6 +6,7 @@ from app.models.job import Job, JobApplication, ApplicationStatus
 from app.models.event import Event, EventRegistration
 from app.models.file import FileUpload
 from app.models.notification import Notification, NotificationType
+from app.models.contact_message import ContactMessage
 
 __all__ = [
     "User",
@@ -21,4 +22,5 @@ __all__ = [
     "FileUpload",
     "Notification",
     "NotificationType",
+    "ContactMessage",
 ]

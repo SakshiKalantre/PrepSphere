@@ -101,6 +101,9 @@ export default function TPODashboard() {
   const [rejectLoading, setRejectLoading] = useState(false)
   const [approveLoadingId, setApproveLoadingId] = useState<number | null>(null)
   
+  // Contact Messages State
+  const [contactMessages, setContactMessages] = useState<Array<any>>([])
+  
   // Messaging State
   const [isMessaging, setIsMessaging] = useState(false)
   const [messageRecipient, setMessageRecipient] = useState({ email: '', name: '' })
@@ -282,6 +285,12 @@ export default function TPODashboard() {
       if (notif.ok) {
         setNotificationHistory(await notif.json())
       }
+      
+      // Fetch contact messages
+      const contactMsgs = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages`)
+      if (contactMsgs.ok) {
+        setContactMessages(await contactMsgs.json())
+      }
     } catch {}
   }
 
@@ -412,13 +421,15 @@ export default function TPODashboard() {
           }
         }
                 
-        // Calculate registration rate: (avg registrations per event / total registrations) * 100
+        // Calculate average registrations per event
         const avgRegistrationsPerEvent = monthEvents > 0 ? monthRegistrations / monthEvents : 0;
-        const rate = totalRegistrations > 0 ? Math.round((avgRegistrationsPerEvent / totalRegistrations) * 100) : 0;
+                
+        // Calculate registration rate: (total events / total registrations) * 100
+        const registrationRate = totalRegistrations > 0 ? Math.round((totalEvents / totalRegistrations) * 100) : 0;
                 
         eventRegistrationRateData.push({
           month: monthName,
-          rate: rate
+          rate: registrationRate
         });
                 
         // Calculate monthly trend data using the specified formula
@@ -1181,35 +1192,7 @@ export default function TPODashboard() {
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
-                          <CardContent className="p-6">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-gray-600">Registration Rate</p>
-                                <h3 className="text-3xl font-bold text-maroon">
-                                  {stats.total_students > 0 
-                                    ? Math.round((tpoAnalytics.totalRegistrations / (tpoAnalytics.totalEvents * stats.total_students || 1)) * 100)
-                                    : 0}%
-                                </h3>
-                              </div>
-                              <Activity className="h-10 w-10 text-orange-500" />
-                            </div>
-                          </CardContent>
-                        </Card>
-                        
-                        <Card className="border-none shadow-md">
-                          <CardContent className="p-6">
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-gray-600">Monthly Reg. Count</p>
-                                <h3 className="text-3xl font-bold text-maroon">
-                                  {tpoAnalytics.monthlyRegistrationCount || 0}
-                                </h3>
-                              </div>
-                              <BarChart className="h-10 w-10 text-purple-500" />
-                            </div>
-                          </CardContent>
-                        </Card>
+
                         
                         <Card className="border-none shadow-md">
                           <CardContent className="p-6">
@@ -1226,58 +1209,7 @@ export default function TPODashboard() {
                         </Card>
                       </div>
                       
-                      <Card className="border-none shadow-md">
-                        <CardHeader>
-                          <CardTitle>Event Registration Rate Trend</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <LineChart data={eventRegistrationRateData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                                <Tooltip formatter={(value) => [`${value}%`, "Registration Rate"]} />
-                                <Legend />
-                                <Line 
-                                  type="monotone" 
-                                  dataKey="rate" 
-                                  stroke="#8884d8" 
-                                  strokeWidth={2}
-                                  dot={{ r: 4 }}
-                                  activeDot={{ r: 6 }}
-                                  name="Registration Rate"
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="border-none shadow-md">
-                        <CardHeader>
-                          <CardTitle>Monthly Event Trend</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RechartsBarChart data={tpoAnalytics.monthlyTrendData || []}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
-                                <Tooltip formatter={(value, name, props) => [
-                                  `${value}%`, 
-                                  "Monthly Trend",
-                                  `Registrations: ${props.payload.registrations}`,
-                                  `Events: ${props.payload.events}`
-                                ]} />
-                                <Legend />
-                                <Bar dataKey="rate" fill="#82ca9d" name="Monthly Trend %" />
-                              </RechartsBarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </CardContent>
-                      </Card>
+
                       
                       <Card className="border-none shadow-md">
                         <CardHeader>
@@ -2244,8 +2176,8 @@ export default function TPODashboard() {
                       {notificationHistory.length === 0 ? (
                         <div className="p-4 text-center text-gray-500">No notifications sent yet</div>
                       ) : (
-                        <div className="divide-y">
-                          {notificationHistory.map((notif, idx) => (
+                        <div className="divide-y max-h-96 overflow-y-auto">
+                          {notificationHistory.slice(0, 10).map((notif, idx) => (
                             <div key={idx} className="p-4 hover:bg-gray-50">
                               <div className="flex justify-between items-start">
                                 <div>
@@ -2259,6 +2191,80 @@ export default function TPODashboard() {
                               </div>
                             </div>
                           ))}
+                          {notificationHistory.length > 10 && (
+                            <div className="p-4 text-center text-gray-500 text-sm">
+                              Showing 10 of {notificationHistory.length} notifications
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                {/* Contact Messages Section */}
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-maroon mb-4 flex items-center">
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Contact Messages
+                  </h3>
+                  <Card>
+                    <CardContent className="p-0">
+                      {contactMessages.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">No contact messages received yet</div>
+                      ) : (
+                        <div className="divide-y max-h-96 overflow-y-auto">
+                          {contactMessages.slice(0, 10).map((msg: any, idx: number) => (
+                            <div key={msg.id || idx} className={`p-4 hover:bg-gray-50 ${!msg.is_read ? 'bg-blue-50' : ''}`}>
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <div className="flex items-center mb-1">
+                                    <h4 className="font-semibold">{msg.name}</h4>
+                                    {!msg.is_read && <Badge className="ml-2" variant="default">New</Badge>}
+                                  </div>
+                                  <p className="text-sm text-gray-600">{msg.email}</p>
+                                  <p className="mt-2 text-gray-800">{msg.message}</p>
+                                </div>
+                                <div className="text-right">
+                                  <span className="text-xs text-gray-500 block">{new Date(msg.created_at).toLocaleString()}</span>
+                                  {!msg.is_read && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="mt-2 text-xs"
+                                      onClick={async () => {
+                                        try {
+                                          const response = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages/${msg.id}/read`, {
+                                            method: 'PUT',
+                                            headers: { 'Content-Type': 'application/json' },
+                                          });
+                                          if (response.ok) {
+                                            // Refresh the contact messages
+                                            const updatedResponse = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages`);
+                                            if (updatedResponse.ok) {
+                                              setContactMessages(await updatedResponse.json());
+                                            }
+                                          } else {
+                                            alert('Failed to mark message as read');
+                                          }
+                                        } catch (error) {
+                                          console.error('Error marking message as read:', error);
+                                          alert('Error marking message as read');
+                                        }
+                                      }}
+                                    >
+                                      Mark as Read
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {contactMessages.length > 10 && (
+                            <div className="p-4 text-center text-gray-500 text-sm">
+                              Showing 10 of {contactMessages.length} contact messages
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>

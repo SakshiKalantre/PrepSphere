@@ -2,7 +2,7 @@
 
 import { useUser, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,52 @@ export default function HomePage() {
   // State to track visibility of hidden sections (Selections count, Real-time insights)
   const [showHiddenInsights, setShowHiddenInsights] = useState(false)
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  
+  // State for contact form
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    message: ''
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Handler for form input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setContactForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Handler for form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch(`${API_BASE}/api/v1/contact/contact-messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(contactForm),
+      });
+      
+      if (response.ok) {
+        alert('Thank you for your message! We will get back to you soon.');
+        setContactForm({ name: '', email: '', message: '' }); // Reset form
+      } else {
+        alert('Failed to send message. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     // Check for local session
@@ -423,14 +469,18 @@ export default function HomePage() {
                   <CardTitle className="text-xl text-maroon">Send us a message</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <form className="space-y-4">
+                  <form className="space-y-4" onSubmit={handleSubmit}>
                     <div>
                       <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                       <input 
                         type="text" 
                         id="name" 
+                        name="name"
+                        value={contactForm.name}
+                        onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
                         placeholder="Your name"
+                        required
                       />
                     </div>
                     <div>
@@ -438,20 +488,30 @@ export default function HomePage() {
                       <input 
                         type="email" 
                         id="email" 
+                        name="email"
+                        value={contactForm.email}
+                        onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
                         placeholder="your.email@example.com"
+                        required
                       />
                     </div>
                     <div>
                       <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
                       <textarea 
                         id="message" 
+                        name="message"
+                        value={contactForm.message}
+                        onChange={handleChange}
                         rows={4}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
                         placeholder="Your message"
+                        required
                       ></textarea>
                     </div>
-                    <Button className="w-full bg-maroon hover:bg-maroon/90">Send Message</Button>
+                    <Button type="submit" className="w-full bg-maroon hover:bg-maroon/90" disabled={isSubmitting}>
+                      {isSubmitting ? 'Sending...' : 'Send Message'}
+                    </Button>
                   </form>
                 </CardContent>
               </Card>

@@ -8,6 +8,7 @@ from .clerk_webhook import router as clerk_webhook_router
 from .tpo import router as tpo_router
 from .profiles import router as profiles_router
 from .admin import router as admin_router
+from .contact_message import router as contact_message_router
 
 __all__ = [
     "users_router",
@@ -18,5 +19,6 @@ __all__ = [
     "clerk_webhook_router",
     "tpo_router",
     "profiles_router",
-    "admin_router"
+    "admin_router",
+    "contact_message_router"
 ]

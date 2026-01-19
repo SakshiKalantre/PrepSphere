@@ -9,6 +9,7 @@ class EventBase(BaseModel):
     event_date: datetime
     event_time: str
     status: Optional[str] = "Upcoming"
+    form_url: Optional[str] = None
 
 class EventCreate(EventBase):
     created_by: int
@@ -29,6 +30,7 @@ class EventResponse(EventBase):
     created_by: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+    form_url: Optional[str] = None
     
     class Config:
         from_attributes = True

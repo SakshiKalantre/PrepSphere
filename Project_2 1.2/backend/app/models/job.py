@@ -29,6 +29,7 @@ class Job(Base):
     is_active = Column(Boolean, default=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # TPO user
     total_positions = Column(Integer, default=1)
+    job_url = Column(String, nullable=True)  # URL for job application
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     

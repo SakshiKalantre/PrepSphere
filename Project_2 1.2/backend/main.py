@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from app.api.v1 import users, jobs, events, files, notifications, tpo, profiles, admin
+from app.api.v1 import users, jobs, events, files, notifications, tpo, profiles, admin, contact_message
 from app.core.config import settings
 from app.db.session import engine, Base
 
@@ -47,6 +47,7 @@ app.include_router(notifications.router, prefix=f"{settings.API_V1_STR}/notifica
 app.include_router(tpo.router, prefix=f"{settings.API_V1_STR}/tpo", tags=["tpo"])
 app.include_router(profiles.router, prefix=f"{settings.API_V1_STR}", tags=["profiles"])
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}", tags=["admin"])
+app.include_router(contact_message.router, prefix=f"{settings.API_V1_STR}/contact", tags=["contact"])
 
 @app.get("/")
 async def root():

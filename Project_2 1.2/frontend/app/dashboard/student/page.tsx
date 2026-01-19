@@ -883,7 +883,7 @@ export default function StudentDashboard() {
                               <a className="underline text-maroon break-all" href={job.job_url} target="_blank" rel="noreferrer">{job.job_url}</a>
                             </div>
                           )}
-                          <div className="mt-6 flex space-x-3">
+                          <div className="mt-6 flex flex-wrap gap-3">
                             {appliedJobIds.has(job.id) ? (
                               <Button 
                                 className="bg-green-600 hover:bg-green-700"
@@ -1019,8 +1019,8 @@ export default function StudentDashboard() {
                           </div>
                         )}
                         
-                        <div className="mt-6">
-                          <Button className="w-full bg-maroon hover:bg-maroon/90" disabled={(event.status||'Upcoming')!=='Upcoming'} onClick={async()=>{
+                        <div className="mt-6 flex flex-wrap gap-3">
+                          <Button className="bg-maroon hover:bg-maroon/90" disabled={(event.status||'Upcoming')!=='Upcoming'} onClick={async()=>{
                             try {
                               const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
                               const current = stored ? JSON.parse(stored) : null
@@ -1058,6 +1058,9 @@ export default function StudentDashboard() {
                                 }
                             } catch { alert('Failed to register') }
                           }}>Register</Button>
+                          {event.form_url && (
+                            <Button variant="outline" onClick={()=>{ const w = window.open(event.form_url!, '_blank'); if (!w) { const a=document.createElement('a'); a.href=event.form_url!; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() } }}>Open Event Link</Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
