@@ -71,6 +71,9 @@ export default function AdminDashboard() {
   })
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsError, setAnalyticsError] = useState<string | null>(null)
+  
+  // Contact Messages State
+  const [contactMessages, setContactMessages] = useState<Array<any>>([])
 
   const fetchPendingCertificates = async () => {
     try {
@@ -111,6 +114,15 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchContactMessages = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/contact/contact-messages`)
+      if (res.ok) {
+        setContactMessages(await res.json())
+      }
+    } catch {}
+  }
+  
   useEffect(()=>{ 
     fetchPendingCertificates()
     fetchUsers()
@@ -222,7 +234,17 @@ export default function AdminDashboard() {
                     <BarChart3 className="mr-2 h-4 w-4" />
                     Analytics
                   </Button>
-
+                  <Button 
+                    variant={activeTab === 'contact' ? 'default' : 'ghost'} 
+                    className={`w-full justify-start ${activeTab === 'contact' ? 'bg-maroon hover:bg-maroon/90' : ''}`}
+                    onClick={() => {
+                      setActiveTab('contact');
+                      fetchContactMessages();
+                    }}
+                  >
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    Contact Messages
+                  </Button>
                 </nav>
               </CardContent>
             </Card>
@@ -999,10 +1021,55 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-            
-
-            
-
+                  
+            {activeTab === 'contact' && (
+              <div>
+                <h2 className="text-2xl font-bold text-maroon mb-6">Contact Messages</h2>
+                      
+                {contactMessages.length === 0 ? (
+                  <Card className="border-none shadow-md">
+                    <CardContent className="p-8 text-center">
+                      <MessageCircle className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-gray-500">No contact messages yet</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {contactMessages.map((message) => {
+                      const isNew = !message.is_read;
+                      return (
+                        <Card 
+                          key={message.id} 
+                          className={`border-none shadow-md ${isNew ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-start mb-2">
+                              <h3 className="font-semibold text-lg">{message.name}</h3>
+                              {isNew && (
+                                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">New</span>
+                              )}
+                            </div>
+                            <p className="text-gray-600 text-sm mb-2">{message.email}</p>
+                            <p className="text-gray-500 text-sm mb-3">{new Date(message.created_at).toLocaleString()}</p>
+                            <p className="text-gray-800">{message.message}</p>
+                                  
+                            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
+                              <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
+                                New
+                              </span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+                  
+      
+      
+      
           </div>
         </div>
       </div>

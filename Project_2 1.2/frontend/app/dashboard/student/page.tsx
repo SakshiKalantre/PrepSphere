@@ -916,15 +916,19 @@ export default function StudentDashboard() {
                                       const u = await userRes.json()
                                       const res = await fetch(`${API_BASE}/api/v1/jobs/${job.id}/apply`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ user_id: u.id }) })
                                       if (res.ok) {
-                                          alert('Applied successfully')
                                           setAppliedJobIds(prev => {
                                               const next = new Set(prev)
                                               next.add(job.id)
                                               return next
                                           })
+                                          // Show success message and redirect to job URL after successful application
+                                          alert('Applied successfully')
                                           if (job.job_url) {
-                                              const w = window.open(job.job_url, '_blank')
-                                              if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
+                                              // Give a small delay to ensure the alert is seen before redirect
+                                              setTimeout(() => {
+                                                  const w = window.open(job.job_url, '_blank')
+                                                  if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
+                                              }, 100)
                                           }
                                       } else {
                                           const err = await res.json()
@@ -938,7 +942,22 @@ export default function StudentDashboard() {
                               </Button>
                             )}
                             {job.job_url && (
-                              <Button variant="outline" onClick={()=>{ const w = window.open(job.job_url!, '_blank'); if (!w) { const a=document.createElement('a'); a.href=job.job_url!; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() } }}>Open Job Link</Button>
+                              <Button 
+                                variant="outline" 
+                                onClick={()=>{ 
+                                  const w = window.open(job.job_url!, '_blank'); 
+                                  if (!w) { 
+                                    const a=document.createElement('a'); 
+                                    a.href=job.job_url!; 
+                                    a.target='_blank'; 
+                                    document.body.appendChild(a); 
+                                    a.click(); 
+                                    a.remove() 
+                                  } 
+                                }}
+                              >
+                                Open Link
+                              </Button>
                             )}
                           </div>
                         </CardContent>

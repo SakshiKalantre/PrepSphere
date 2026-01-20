@@ -363,22 +363,21 @@ def update_tpo_job(job_id: int, job_update: JobUpdate, db: Session = Depends(get
     if not db_job:
         raise HTTPException(status_code=404, detail="Job not found")
     
+    # Update standard fields first
+    update_data = job_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        if key not in ['status', 'is_active']:
+            setattr(db_job, key, value)
+            
     # Handle status conversion to is_active
     if job_update.status is not None:
-        # Convert status string to is_active boolean
-        db_job.is_active = job_update.convert_status_to_is_active()
-        # Update the status field to match the is_active value
-        db_job.status = "Active" if db_job.is_active else "Inactive"
-    else:
-        # Update other fields normally
-        update_data = job_update.dict(exclude_unset=True)
-        for key, value in update_data.items():
-            if key != 'is_active':  # Don't double-set is_active
-                setattr(db_job, key, value)
-        
-        # If is_active was explicitly passed, update status accordingly
-        if job_update.is_active is not None:
-            db_job.status = "Active" if job_update.is_active else "Inactive"
+        db_job.status = job_update.status
+        # Sync is_active based on status string
+        # 'Active' -> True, anything else ('Closed', 'Inactive') -> False
+        db_job.is_active = (job_update.status == 'Active')
+    elif job_update.is_active is not None:
+        db_job.is_active = job_update.is_active
+        db_job.status = "Active" if job_update.is_active else "Inactive"
     
     db.commit()
     db.refresh(db_job)

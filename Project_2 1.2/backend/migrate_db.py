@@ -43,6 +43,8 @@ def migrate():
             "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary TEXT;",
             "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS type TEXT;",
             "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_type VARCHAR(50);",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS job_url TEXT;",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active';",
             
             # Events
             "ALTER TABLE events ADD COLUMN IF NOT EXISTS event_time TEXT;",

@@ -71,11 +71,10 @@ export default function TPODashboard() {
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [notificationTitle, setNotificationTitle] = useState('')
   const [notificationMessage, setNotificationMessage] = useState('')
-  const [notificationFilters, setNotificationFilters] = useState({ degree: '', year: '' })
   const [notificationHistory, setNotificationHistory] = useState<Array<any>>([])
   const [editingJobId, setEditingJobId] = useState<number | null>(null)
-  const [editJobForm, setEditJobForm] = useState<{ title:string; company:string; location:string; status:string }>({ title:'', company:'', location:'', status:'Active' })
-  const [originalJobForm, setOriginalJobForm] = useState<{ title:string; company:string; location:string; status:string } | null>(null)
+  const [editJobForm, setEditJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string }>({ title:'', company:'', location:'', status:'Active', description:'', requirements:'', salary_range:'', deadline:'', job_url:'' })
+  const [originalJobForm, setOriginalJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string } | null>(null)
   const [openApplicantsJobId, setOpenApplicantsJobId] = useState<number | null>(null)
   const [applicants, setApplicants] = useState<Array<any>>([])
   const [tpoEvents, setTpoEvents] = useState<Array<any>>([])
@@ -355,40 +354,10 @@ export default function TPODashboard() {
       const totalApplicants = stats.total_applications
       const totalJobs = stats.total_jobs
       
-      // Calculate year-wise placement data
-      const startYear = 2024;
-      const endYear = 2028;
-      
-      // For now, we'll create a simplified year-wise data based on student creation dates
-      // This would need to connect to placement records with actual timestamps
-      const yearlyPlacementData = [];
-      for (let year = startYear; year <= endYear; year++) {
-        // Placeholder calculation - would need actual placement dates from DB
-        const placedThisYear = approvedStudents.filter((student: any) => {
-          // This is a simplified check - in reality, we'd need actual placement dates
-          const placementDate = student.placed_date || student.created_at || student.updated_at;
-          return placementDate && new Date(placementDate).getFullYear() === year && 
-                 (student.placement_status === 'Placed' || student.has_verified_offer_letter);
-        }).length;
-        
-        // Calculate unplaced for this year
-        const allStudentsThisYear = approvedStudents.filter((student: any) => {
-          const creationDate = student.created_at;
-          return creationDate && new Date(creationDate).getFullYear() === year;
-        });
-        const unplacedThisYear = allStudentsThisYear.length - placedThisYear;
-        
-        yearlyPlacementData.push({
-          year: year.toString(),
-          placed: placedThisYear,
-          unplaced: unplacedThisYear
-        });
-      }
-      
       // Calculate event registration rate by month (September to May)
       const months = ['Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May'];
-      const eventRegistrationRateData = [];
-      const monthlyTrendData = [];
+      const eventRegistrationRateData: any[] = [];
+      const monthlyTrendData: any[] = [];
       
       // Start from September of previous year if current month is before September
       const currentDate = new Date();
@@ -444,7 +413,7 @@ export default function TPODashboard() {
         });
       }
       
-      setTpoAnalytics(prev => ({
+      setTpoAnalytics((prev: any) => ({
         ...prev,
         activeJobs,
         inactiveJobs,
@@ -459,10 +428,9 @@ export default function TPODashboard() {
         totalStudents,
         totalApplicants,
         totalJobs,
-        yearlyPlacementData,
-        eventRegistrationRateData,
+        eventRegistrationRateData: eventRegistrationRateData,
         monthlyRegistrationCount: Math.round(totalRegistrations / 12), // Average monthly registrations
-        monthlyTrendData
+        monthlyTrendData: monthlyTrendData
       }))
     } catch (error) {
       console.error('Error fetching TPO analytics:', error)
@@ -999,27 +967,6 @@ export default function TPODashboard() {
                           </CardContent>
                         </Card>
                       </div>
-                      
-                      <Card className="border-none shadow-md">
-                        <CardHeader>
-                          <CardTitle>Year-wise Placement Trends</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="h-80">
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RechartsBarChart data={yearlyPlacementData}>
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="year" />
-                                <YAxis />
-                                <Tooltip />
-                                <Legend />
-                                <Bar dataKey="placed" fill="#8884d8" name="Placed Students" />
-                                <Bar dataKey="unplaced" fill="#ff8042" name="Unplaced Students" />
-                              </RechartsBarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </CardContent>
-                      </Card>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <Card className="border-none shadow-md">
@@ -1676,35 +1623,103 @@ export default function TPODashboard() {
                           <div>
                             {editingJobId === job.id ? (
                               <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor={`editJobTitle-${job.id}`}>Job Title</Label>
-                                  <Input
-                                    id={`editJobTitle-${job.id}`}
-                                    className={`${originalJobForm && editJobForm.title !== originalJobForm.title ? 'ring-2 ring-maroon bg-cream' : ''} ${!editJobForm.title.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editJobForm.title}
-                                    onChange={(e)=>setEditJobForm({...editJobForm, title:e.target.value})}
-                                  />
-                                  {!editJobForm.title.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editJobTitle-${job.id}`}>Job Title</Label>
+                                    <Input
+                                      id={`editJobTitle-${job.id}`}
+                                      className={`${originalJobForm && editJobForm.title !== originalJobForm.title ? 'ring-2 ring-maroon bg-cream' : ''} ${!editJobForm.title.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editJobForm.title}
+                                      onChange={(e)=>setEditJobForm({...editJobForm, title:e.target.value})}
+                                    />
+                                    {!editJobForm.title.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editJobCompany-${job.id}`}>Company</Label>
+                                    <Input
+                                      id={`editJobCompany-${job.id}`}
+                                      className={`${originalJobForm && editJobForm.company !== originalJobForm.company ? 'ring-2 ring-maroon bg-cream' : ''} ${!editJobForm.company.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editJobForm.company}
+                                      onChange={(e)=>setEditJobForm({...editJobForm, company:e.target.value})}
+                                    />
+                                    {!editJobForm.company.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editJobLocation-${job.id}`}>Location</Label>
+                                    <Input
+                                      id={`editJobLocation-${job.id}`}
+                                      className={`${originalJobForm && editJobForm.location !== originalJobForm.location ? 'ring-2 ring-maroon bg-cream' : ''} ${!editJobForm.location.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editJobForm.location}
+                                      onChange={(e)=>setEditJobForm({...editJobForm, location:e.target.value})}
+                                    />
+                                    {!editJobForm.location.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editJobStatus-${job.id}`}>Status</Label>
+                                    <select 
+                                      id={`editJobStatus-${job.id}`}
+                                      className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${originalJobForm && editJobForm.status !== originalJobForm.status ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editJobForm.status}
+                                      onChange={(e)=>setEditJobForm({...editJobForm, status:e.target.value})}
+                                    >
+                                      <option value="Active">Active</option>
+                                      <option value="Closed">Closed</option>
+                                      <option value="Inactive">Inactive</option>
+                                    </select>
+                                  </div>
                                 </div>
                                 <div>
-                                  <Label htmlFor={`editJobCompany-${job.id}`}>Company</Label>
-                                  <Input
-                                    id={`editJobCompany-${job.id}`}
-                                    className={`${originalJobForm && editJobForm.company !== originalJobForm.company ? 'ring-2 ring-maroon bg-cream' : ''} ${!editJobForm.company.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editJobForm.company}
-                                    onChange={(e)=>setEditJobForm({...editJobForm, company:e.target.value})}
+                                  <Label htmlFor={`editJobDesc-${job.id}`}>Description</Label>
+                                  <Textarea
+                                    id={`editJobDesc-${job.id}`}
+                                    className={`${originalJobForm && editJobForm.description !== originalJobForm.description ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                    value={editJobForm.description}
+                                    onChange={(e)=>setEditJobForm({...editJobForm, description:e.target.value})}
+                                    rows={3}
                                   />
-                                  {!editJobForm.company.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
                                 </div>
                                 <div>
-                                  <Label htmlFor={`editJobLocation-${job.id}`}>Location</Label>
-                                  <Input
-                                    id={`editJobLocation-${job.id}`}
-                                    className={`${originalJobForm && editJobForm.location !== originalJobForm.location ? 'ring-2 ring-maroon bg-cream' : ''} ${!editJobForm.location.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editJobForm.location}
-                                    onChange={(e)=>setEditJobForm({...editJobForm, location:e.target.value})}
+                                  <Label htmlFor={`editJobReq-${job.id}`}>Requirements</Label>
+                                  <Textarea
+                                    id={`editJobReq-${job.id}`}
+                                    className={`${originalJobForm && editJobForm.requirements !== originalJobForm.requirements ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                    value={editJobForm.requirements}
+                                    onChange={(e)=>setEditJobForm({...editJobForm, requirements:e.target.value})}
+                                    rows={3}
                                   />
-                                  {!editJobForm.location.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editJobSalary-${job.id}`}>Salary Range</Label>
+                                    <Input
+                                      id={`editJobSalary-${job.id}`}
+                                      className={`${originalJobForm && editJobForm.salary_range !== originalJobForm.salary_range ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editJobForm.salary_range}
+                                      onChange={(e)=>setEditJobForm({...editJobForm, salary_range:e.target.value})}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editJobDeadline-${job.id}`}>Deadline</Label>
+                                    <Input
+                                      id={`editJobDeadline-${job.id}`}
+                                      type="date"
+                                      className={`${originalJobForm && editJobForm.deadline !== originalJobForm.deadline ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editJobForm.deadline}
+                                      onChange={(e)=>setEditJobForm({...editJobForm, deadline:e.target.value})}
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label htmlFor={`editJobUrl-${job.id}`}>Job URL</Label>
+                                  <Input
+                                    id={`editJobUrl-${job.id}`}
+                                    placeholder="https://company.com/jobs/..."
+                                    className={`${originalJobForm && editJobForm.job_url !== originalJobForm.job_url ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                    value={editJobForm.job_url}
+                                    onChange={(e)=>setEditJobForm({...editJobForm, job_url:e.target.value})}
+                                  />
                                 </div>
                               </div>
                             ) : (
@@ -1757,7 +1772,17 @@ export default function TPODashboard() {
                             <>
                               <Button variant="outline" disabled={!editJobForm.title.trim() || !editJobForm.company.trim() || !editJobForm.location.trim()} onClick={async()=>{
                                 try {
-                                  const payload:any = { title: editJobForm.title || null, company: editJobForm.company || null, location: editJobForm.location || null, status: editJobForm.status || null }
+                                  const payload:any = { 
+                                    title: editJobForm.title || null, 
+                                    company: editJobForm.company || null, 
+                                    location: editJobForm.location || null, 
+                                    status: editJobForm.status || null,
+                                    description: editJobForm.description || null,
+                                    requirements: editJobForm.requirements || null,
+                                    salary_range: editJobForm.salary_range || null,
+                                    application_deadline: editJobForm.deadline ? new Date(editJobForm.deadline).toISOString() : null,
+                                    job_url: editJobForm.job_url || null
+                                  }
                                   const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/jobs/${job.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
                                   if (res.ok) {
                                     const updated = await res.json()
@@ -1777,7 +1802,23 @@ export default function TPODashboard() {
                               </Button>
                             </>
                           ) : (
-                            <Button variant="outline" onClick={()=>{ setEditingJobId(job.id); setEditJobForm({ title: job.title || '', company: job.company || '', location: job.location || '', status: job.status || 'Active' }); setOriginalJobForm({ title: job.title || '', company: job.company || '', location: job.location || '', status: job.status || 'Active' }) }}>
+                            <Button variant="outline" onClick={()=>{ 
+                              setEditingJobId(job.id); 
+                              const deadline = job.application_deadline ? new Date(job.application_deadline).toISOString().split('T')[0] : '';
+                              const form = { 
+                                title: job.title || '', 
+                                company: job.company || '', 
+                                location: job.location || '', 
+                                status: job.status || 'Active',
+                                description: job.description || '',
+                                requirements: job.requirements || '',
+                                salary_range: job.salary_range || '',
+                                deadline: deadline,
+                                job_url: job.job_url || ''
+                              };
+                              setEditJobForm(form); 
+                              setOriginalJobForm(form); 
+                            }}>
                               <Edit className="mr-2 h-4 w-4" />
                               Edit
                             </Button>
@@ -2102,40 +2143,6 @@ export default function TPODashboard() {
                         <Textarea id="notificationMessage" rows={4} placeholder="Notification message" value={notificationMessage} onChange={(e)=>setNotificationMessage(e.target.value)} />
                       </div>
                       
-                      <div>
-                        <Label>Recipients Filters (Optional)</Label>
-                        <div className="mt-2 grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-xs text-gray-500">Degree</Label>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                              value={notificationFilters.degree}
-                              onChange={(e)=>setNotificationFilters(prev=>({...prev, degree: e.target.value}))}
-                            >
-                              <option value="">All Degrees</option>
-                              <option value="B.Tech">B.Tech</option>
-                              <option value="M.Tech">M.Tech</option>
-                              <option value="MCA">MCA</option>
-                              <option value="MBA">MBA</option>
-                            </select>
-                          </div>
-                          <div>
-                            <Label className="text-xs text-gray-500">Year</Label>
-                            <select 
-                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                              value={notificationFilters.year}
-                              onChange={(e)=>setNotificationFilters(prev=>({...prev, year: e.target.value}))}
-                            >
-                              <option value="">All Years</option>
-                              <option value="1st Year">1st Year</option>
-                              <option value="2nd Year">2nd Year</option>
-                              <option value="3rd Year">3rd Year</option>
-                              <option value="Final Year">Final Year</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      
                       <div className="flex space-x-3">
                         <Button className="bg-maroon hover:bg-maroon/90" onClick={async()=>{
                           try {
@@ -2145,8 +2152,7 @@ export default function TPODashboard() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ 
                                 title: notificationTitle.trim(), 
-                                message: notificationMessage.trim(),
-                                filters: notificationFilters
+                                message: notificationMessage.trim()
                               })
                             })
                             if (res.ok) {
@@ -2381,7 +2387,7 @@ export default function TPODashboard() {
                       let res;
                       if (rejectFileId) {
                         // Reject file/resume
-                        res = await fetch(`${API_BASE_DEFAULT}/api/v1/files/${rejectFileId}/reject`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ reason: rejectReason.trim() }) })
+                        res = await fetch(`${API_BASE_DEFAULT}/api/v1/files/${rejectFileId}/reject`, { method:'PUT', headers:{'Content-Type':'text/plain'}, body: rejectReason.trim() })
                       } else {
                         // Reject profile
                         res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/profiles/${rejectUserId}/reject`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ reason: rejectReason.trim(), sent_by: tpoUserId }) })
