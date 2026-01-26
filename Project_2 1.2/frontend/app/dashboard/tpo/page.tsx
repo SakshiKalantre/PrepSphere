@@ -60,7 +60,7 @@ export default function TPODashboard() {
   const [activeTab, setActiveTab] = useState('profiles')
   const [isCreatingJob, setIsCreatingJob] = useState(false)
   const [jobs, setJobs] = useState<Array<any>>([])
-  const [jobForm, setJobForm] = useState({ title:'', company:'', location:'', salary:'', type:'Full-time', description:'', requirements:'', deadline:'', job_url:'' })
+  const [jobForm, setJobForm] = useState({ title:'', company:'', location:'', salary:'', type:'Full-time', description:'', requirements:'', deadline:'', job_url:'', total_positions: 1 })
   const [tpoUserId, setTpoUserId] = useState<number | null>(null)
   const [pendingProfiles, setPendingProfiles] = useState<Array<any>>([])
   const [pendingResumes, setPendingResumes] = useState<Array<any>>([])
@@ -73,16 +73,16 @@ export default function TPODashboard() {
   const [notificationMessage, setNotificationMessage] = useState('')
   const [notificationHistory, setNotificationHistory] = useState<Array<any>>([])
   const [editingJobId, setEditingJobId] = useState<number | null>(null)
-  const [editJobForm, setEditJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string }>({ title:'', company:'', location:'', status:'Active', description:'', requirements:'', salary_range:'', deadline:'', job_url:'' })
-  const [originalJobForm, setOriginalJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string } | null>(null)
+  const [editJobForm, setEditJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string; total_positions:number }>({ title:'', company:'', location:'', status:'Active', description:'', requirements:'', salary_range:'', deadline:'', job_url:'', total_positions: 1 })
+  const [originalJobForm, setOriginalJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string; total_positions:number } | null>(null)
   const [openApplicantsJobId, setOpenApplicantsJobId] = useState<number | null>(null)
   const [applicants, setApplicants] = useState<Array<any>>([])
   const [tpoEvents, setTpoEvents] = useState<Array<any>>([])
   const [isCreatingEvent, setIsCreatingEvent] = useState(false)
   const [eventForm, setEventForm] = useState({ title:'', description:'', location:'', date:'', time:'', form_url:'', category:'' })
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
-  const [editEventForm, setEditEventForm] = useState({ title:'', description:'', location:'', date:'', time:'', status:'Upcoming' })
-  const [originalEventForm, setOriginalEventForm] = useState<{ title:string; description:string; location:string; date:string; time:string; status:string } | null>(null)
+  const [editEventForm, setEditEventForm] = useState({ title:'', description:'', location:'', date:'', time:'', status:'Upcoming', event_type:'', capacity:'', is_online:false, meeting_link:'', form_url:'', category:'' })
+  const [originalEventForm, setOriginalEventForm] = useState<{ title:string; description:string; location:string; date:string; time:string; status:string; event_type:string; capacity:string; is_online:boolean; meeting_link:string; form_url:string; category:string } | null>(null)
   const [openEventId, setOpenEventId] = useState<number | null>(null)
   const [eventRegs, setEventRegs] = useState<Array<any>>([])
   const [eventFilter, setEventFilter] = useState<'Upcoming'|'Completed'|'Cancelled'|'All'>('Upcoming')
@@ -99,6 +99,7 @@ export default function TPODashboard() {
   const [rejectReason, setRejectReason] = useState('')
   const [rejectLoading, setRejectLoading] = useState(false)
   const [approveLoadingId, setApproveLoadingId] = useState<number | null>(null)
+  const [jobFilter, setJobFilter] = useState<'All'|'Active'|'Inactive'>('All')
   
   // Contact Messages State
   const [contactMessages, setContactMessages] = useState<Array<any>>([])
@@ -690,7 +691,7 @@ export default function TPODashboard() {
         const row = await res.json()
         setJobs(prev=>[row, ...prev])
         setIsCreatingJob(false)
-        setJobForm({ title:'', company:'', location:'', salary:'', type:'Full-time', description:'', requirements:'', deadline:'', job_url:'' })
+        setJobForm({ title:'', company:'', location:'', salary:'', type:'Full-time', description:'', requirements:'', deadline:'', job_url:'', total_positions: 1 })
       }
     } catch {}
   }
@@ -1556,6 +1557,31 @@ export default function TPODashboard() {
                   </Button>
                 </div>
                 
+                {/* Job Filter Buttons */}
+                <div className="flex space-x-2 mb-6">
+                  <Button 
+                    variant={jobFilter === 'All' ? 'default' : 'outline'}
+                    className={jobFilter === 'All' ? 'bg-maroon hover:bg-maroon/90' : 'border-maroon text-maroon hover:bg-maroon/10'}
+                    onClick={() => setJobFilter('All')}
+                  >
+                    All Jobs
+                  </Button>
+                  <Button 
+                    variant={jobFilter === 'Active' ? 'default' : 'outline'}
+                    className={jobFilter === 'Active' ? 'bg-maroon hover:bg-maroon/90' : 'border-maroon text-maroon hover:bg-maroon/10'}
+                    onClick={() => setJobFilter('Active')}
+                  >
+                    Active Jobs
+                  </Button>
+                  <Button 
+                    variant={jobFilter === 'Inactive' ? 'default' : 'outline'}
+                    className={jobFilter === 'Inactive' ? 'bg-maroon hover:bg-maroon/90' : 'border-maroon text-maroon hover:bg-maroon/10'}
+                    onClick={() => setJobFilter('Inactive')}
+                  >
+                    Inactive Jobs
+                  </Button>
+                </div>
+                
                 {isCreatingJob ? (
                   <Card className="border-none shadow-md mb-6">
                     <CardHeader>
@@ -1604,6 +1630,16 @@ export default function TPODashboard() {
                             <Label htmlFor="jobUrl">Job URL</Label>
                             <Input id="jobUrl" placeholder="https://company.com/jobs/..." value={jobForm.job_url} onChange={(e)=>setJobForm({...jobForm, job_url:e.target.value})} />
                           </div>
+                          <div>
+                            <Label htmlFor="totalPositions">Number of Openings</Label>
+                            <Input 
+                              id="totalPositions" 
+                              type="number" 
+                              min="1" 
+                              value={jobForm.total_positions} 
+                              onChange={(e)=>setJobForm({...jobForm, total_positions: parseInt(e.target.value) || 1})} 
+                            />
+                          </div>
                         </div>
                       </div>
                       
@@ -1616,7 +1652,12 @@ export default function TPODashboard() {
                 ) : null}
                 
                 <div className="grid grid-cols-1 gap-6">
-                  {jobs.map((job) => (
+                  {jobs.filter(job => {
+                    if (jobFilter === 'All') return true;
+                    if (jobFilter === 'Active') return job.status === 'Active' || job.status === 'Active';
+                    if (jobFilter === 'Inactive') return job.status === 'Inactive' || job.status === 'Closed';
+                    return true;
+                  }).map((job) => (
                     <Card key={job.id} className={`border-none shadow-md ${job.status === 'Closed' ? 'opacity-75 bg-gray-50' : ''}`}>
                       <CardContent className="p-6">
                         <div className="flex justify-between">
@@ -1721,6 +1762,17 @@ export default function TPODashboard() {
                                     onChange={(e)=>setEditJobForm({...editJobForm, job_url:e.target.value})}
                                   />
                                 </div>
+                                <div>
+                                  <Label htmlFor={`editJobPositions-${job.id}`}>Number of Openings</Label>
+                                  <Input
+                                    id={`editJobPositions-${job.id}`}
+                                    type="number"
+                                    min="1"
+                                    className={`${originalJobForm && editJobForm.total_positions !== originalJobForm.total_positions ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                    value={editJobForm.total_positions}
+                                    onChange={(e)=>setEditJobForm({...editJobForm, total_positions: parseInt(e.target.value) || 1})}
+                                  />
+                                </div>
                               </div>
                             ) : (
                               <>
@@ -1781,7 +1833,8 @@ export default function TPODashboard() {
                                     requirements: editJobForm.requirements || null,
                                     salary_range: editJobForm.salary_range || null,
                                     application_deadline: editJobForm.deadline ? new Date(editJobForm.deadline).toISOString() : null,
-                                    job_url: editJobForm.job_url || null
+                                    job_url: editJobForm.job_url || null,
+                                    total_positions: editJobForm.total_positions || 1
                                   }
                                   const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/jobs/${job.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
                                   if (res.ok) {
@@ -1814,7 +1867,8 @@ export default function TPODashboard() {
                                 requirements: job.requirements || '',
                                 salary_range: job.salary_range || '',
                                 deadline: deadline,
-                                job_url: job.job_url || ''
+                                job_url: job.job_url || '',
+                                total_positions: job.total_positions || 1
                               };
                               setEditJobForm(form); 
                               setOriginalJobForm(form); 
@@ -1945,46 +1999,108 @@ export default function TPODashboard() {
                           <div>
                             {editingEventId === event.id ? (
                               <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor={`editEventTitle-${event.id}`}>Title</Label>
-                                  <Input
-                                    id={`editEventTitle-${event.id}`}
-                                    className={`${originalEventForm && editEventForm.title !== originalEventForm.title ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.title.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editEventForm.title}
-                                    onChange={(e)=>setEditEventForm({...editEventForm, title:e.target.value})}
-                                  />
-                                  {!editEventForm.title.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editEventTitle-${event.id}`}>Title</Label>
+                                    <Input
+                                      id={`editEventTitle-${event.id}`}
+                                      className={`${originalEventForm && editEventForm.title !== originalEventForm.title ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.title.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editEventForm.title}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, title:e.target.value})}
+                                    />
+                                    {!editEventForm.title.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editEventLocation-${event.id}`}>Location</Label>
+                                    <Input
+                                      id={`editEventLocation-${event.id}`}
+                                      className={`${originalEventForm && editEventForm.location !== originalEventForm.location ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.location.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editEventForm.location}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, location:e.target.value})}
+                                    />
+                                    {!editEventForm.location.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
                                 </div>
-                                <div>
-                                  <Label htmlFor={`editEventLocation-${event.id}`}>Location</Label>
-                                  <Input
-                                    id={`editEventLocation-${event.id}`}
-                                    className={`${originalEventForm && editEventForm.location !== originalEventForm.location ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.location.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editEventForm.location}
-                                    onChange={(e)=>setEditEventForm({...editEventForm, location:e.target.value})}
-                                  />
-                                  {!editEventForm.location.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editEventDate-${event.id}`}>Date</Label>
+                                    <Input
+                                      id={`editEventDate-${event.id}`}
+                                      type="date"
+                                      className={`${originalEventForm && editEventForm.date !== originalEventForm.date ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.date.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editEventForm.date}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, date:e.target.value})}
+                                    />
+                                    {!editEventForm.date.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editEventTime-${event.id}`}>Time</Label>
+                                    <Input
+                                      id={`editEventTime-${event.id}`}
+                                      className={`${originalEventForm && editEventForm.time !== originalEventForm.time ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.time.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                      value={editEventForm.time}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, time:e.target.value})}
+                                    />
+                                    {!editEventForm.time.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                  </div>
                                 </div>
-                                <div>
-                                  <Label htmlFor={`editEventDate-${event.id}`}>Date</Label>
-                                  <Input
-                                    id={`editEventDate-${event.id}`}
-                                    type="date"
-                                    className={`${originalEventForm && editEventForm.date !== originalEventForm.date ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.date.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editEventForm.date}
-                                    onChange={(e)=>setEditEventForm({...editEventForm, date:e.target.value})}
-                                  />
-                                  {!editEventForm.date.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editEventType-${event.id}`}>Event Type</Label>
+                                    <Input
+                                      id={`editEventType-${event.id}`}
+                                      className={`${originalEventForm && editEventForm.event_type !== originalEventForm.event_type ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editEventForm.event_type}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, event_type:e.target.value})}
+                                      placeholder="e.g., Workshop, Interview, Seminar"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editEventCapacity-${event.id}`}>Capacity</Label>
+                                    <Input
+                                      id={`editEventCapacity-${event.id}`}
+                                      type="number"
+                                      className={`${originalEventForm && editEventForm.capacity !== originalEventForm.capacity ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editEventForm.capacity}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, capacity:e.target.value})}
+                                      placeholder="Max participants"
+                                    />
+                                  </div>
                                 </div>
-                                <div>
-                                  <Label htmlFor={`editEventTime-${event.id}`}>Time</Label>
-                                  <Input
-                                    id={`editEventTime-${event.id}`}
-                                    className={`${originalEventForm && editEventForm.time !== originalEventForm.time ? 'ring-2 ring-maroon bg-cream' : ''} ${!editEventForm.time.trim() ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                                    value={editEventForm.time}
-                                    onChange={(e)=>setEditEventForm({...editEventForm, time:e.target.value})}
-                                  />
-                                  {!editEventForm.time.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="flex items-center space-x-2 pt-4">
+                                    <input
+                                      type="checkbox"
+                                      id={`editEventIsOnline-${event.id}`}
+                                      checked={editEventForm.is_online}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, is_online:e.target.checked})}
+                                      className="h-4 w-4"
+                                    />
+                                    <Label htmlFor={`editEventIsOnline-${event.id}`}>Is Online Event?</Label>
+                                  </div>
+
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <Label htmlFor={`editEventFormUrl-${event.id}`}>Registration Form URL</Label>
+                                    <Input
+                                      id={`editEventFormUrl-${event.id}`}
+                                      className={`${originalEventForm && editEventForm.form_url !== originalEventForm.form_url ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editEventForm.form_url}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, form_url:e.target.value})}
+                                      placeholder="Google Form or Registration URL"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor={`editEventCategory-${event.id}`}>Category</Label>
+                                    <Input
+                                      id={`editEventCategory-${event.id}`}
+                                      className={`${originalEventForm && editEventForm.category !== originalEventForm.category ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                      value={editEventForm.category}
+                                      onChange={(e)=>setEditEventForm({...editEventForm, category:e.target.value})}
+                                      placeholder="e.g., Technical, Soft Skills"
+                                    />
+                                  </div>
                                 </div>
                                 <div>
                                   <Label htmlFor={`editEventDesc-${event.id}`}>Description</Label>
@@ -1995,6 +2111,20 @@ export default function TPODashboard() {
                                     value={editEventForm.description}
                                     onChange={(e)=>setEditEventForm({...editEventForm, description:e.target.value})}
                                   />
+                                  {!editEventForm.description.trim() && <p className="mt-1 text-xs text-red-600">Required</p>}
+                                </div>
+                                <div>
+                                  <Label htmlFor={`editEventStatus-${event.id}`}>Status</Label>
+                                  <select 
+                                    id={`editEventStatus-${event.id}`}
+                                    className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${originalEventForm && editEventForm.status !== originalEventForm.status ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                    value={editEventForm.status}
+                                    onChange={(e)=>setEditEventForm({...editEventForm, status:e.target.value})}
+                                  >
+                                    <option value="Upcoming">Upcoming</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Cancelled">Cancelled</option>
+                                  </select>
                                 </div>
                               </div>
                             ) : (
@@ -2041,55 +2171,72 @@ export default function TPODashboard() {
                               }
                             } catch {}
                           }}>View Details</Button>
-                          {editingEventId === event.id ? (
+                          {(event.status || 'Upcoming') !== 'Cancelled' && (event.status || 'Upcoming') !== 'Completed' && (
                             <>
-                              <Button variant="outline" disabled={!editEventForm.title.trim() || !editEventForm.location.trim() || !editEventForm.date.trim() || !editEventForm.time.trim()} onClick={async()=>{
+                              {editingEventId === event.id ? (
+                                <>
+                                  <Button variant="outline" disabled={!editEventForm.title.trim() || !editEventForm.location.trim() || !editEventForm.date.trim() || !editEventForm.time.trim()} onClick={async()=>{
+                                    try {
+                                      const payload:any = { 
+                                        title: editEventForm.title || null, 
+                                        location: editEventForm.location || null, 
+                                        date: editEventForm.date || null, 
+                                        time: editEventForm.time || null, 
+                                        description: editEventForm.description || null, 
+                                        status: editEventForm.status || null,
+                                        event_type: editEventForm.event_type || null,
+                                        capacity: editEventForm.capacity ? parseInt(editEventForm.capacity) : null,
+                                        is_online: editEventForm.is_online || false,
+                                        meeting_link: editEventForm.meeting_link || null,
+                                        form_url: editEventForm.form_url || null,
+                                        category: editEventForm.category || null
+                                      }
+                                      const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+                                      if (res.ok) {
+                                        const updated = await res.json()
+                                        setTpoEvents(prev => prev.map(e => e.id === event.id ? { ...e, ...updated } : e))
+                                        setEditingEventId(null)
+                                        setOriginalEventForm(null)
+                                        alert('Event updated successfully')
+                                      }
+                                    } catch {}
+                                  }}>
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Save
+                                  </Button>
+                                  <Button variant="outline" onClick={()=> { setEditingEventId(null); setOriginalEventForm(null) }}>
+                                    <X className="mr-2 h-4 w-4" />
+                                    Cancel
+                                  </Button>
+                                </>
+                              ) : (
+                                <Button variant="outline" onClick={()=>{ setEditingEventId(event.id); setEditEventForm({ title: event.title || '', description: event.description || '', location: event.location || '', date: event.date || '', time: event.time || '', status: event.status || 'Upcoming', event_type: event.event_type || '', capacity: event.capacity?.toString() || '', is_online: event.is_online || false, meeting_link: event.meeting_link || '', form_url: event.form_url || '', category: event.category || '' }); setOriginalEventForm({ title: event.title || '', description: event.description || '', location: event.location || '', date: event.date || '', time: event.time || '', status: event.status || 'Upcoming', event_type: event.event_type || '', capacity: event.capacity?.toString() || '', is_online: event.is_online || false, meeting_link: event.meeting_link || '', form_url: event.form_url || '', category: event.category || '' }) }}>Edit</Button>
+                              )}
+                              <Button variant="outline" onClick={async()=>{
                                 try {
-                                  const payload:any = { title: editEventForm.title || null, location: editEventForm.location || null, date: editEventForm.date || null, time: editEventForm.time || null, description: editEventForm.description || null, status: editEventForm.status || null }
-                                  const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+                                  const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}/reminders`, { method:'POST' })
+                                  if (res.ok) alert('Reminders sent')
+                                } catch { alert('Failed to send reminders') }
+                              }}>Send Reminder</Button>
+                              <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={async()=>{
+                                try {
+                                  const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: 'Cancelled' }) })
+                                  if (res.ok) {
+                                    setTpoEvents(prev => prev.filter(e => e.id !== event.id))
+                                  }
+                                } catch {}
+                              }}>Cancel</Button>
+                              <Button variant="outline" onClick={async()=>{
+                                try {
+                                  const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: 'Completed' }) })
                                   if (res.ok) {
                                     const updated = await res.json()
                                     setTpoEvents(prev => prev.map(e => e.id === event.id ? { ...e, ...updated } : e))
-                                    setEditingEventId(null)
-                                    setOriginalEventForm(null)
-                                    alert('Event updated successfully')
                                   }
                                 } catch {}
-                              }}>
-                                <Check className="mr-2 h-4 w-4" />
-                                Save
-                              </Button>
-                              <Button variant="outline" onClick={()=> { setEditingEventId(null); setOriginalEventForm(null) }}>
-                                <X className="mr-2 h-4 w-4" />
-                                Cancel
-                              </Button>
+                              }}>Mark Completed</Button>
                             </>
-                          ) : (
-                            <Button variant="outline" onClick={()=>{ setEditingEventId(event.id); setEditEventForm({ title: event.title || '', description: event.description || '', location: event.location || '', date: event.date || '', time: event.time || '', status: event.status || 'Upcoming' }); setOriginalEventForm({ title: event.title || '', description: event.description || '', location: event.location || '', date: event.date || '', time: event.time || '', status: event.status || 'Upcoming' }) }}>Edit</Button>
                           )}
-                          <Button variant="outline" onClick={async()=>{
-                            try {
-                              const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}/reminders`, { method:'POST' })
-                              if (res.ok) alert('Reminders sent')
-                            } catch { alert('Failed to send reminders') }
-                          }}>Send Reminder</Button>
-                          <Button variant="destructive" className="bg-red-600 hover:bg-red-700 text-white" onClick={async()=>{
-                            try {
-                              const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: 'Cancelled' }) })
-                              if (res.ok) {
-                                setTpoEvents(prev => prev.filter(e => e.id !== event.id))
-                              }
-                            } catch {}
-                          }}>Cancel</Button>
-                          <Button variant="outline" onClick={async()=>{
-                            try {
-                              const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/events/${event.id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ status: 'Completed' }) })
-                              if (res.ok) {
-                                const updated = await res.json()
-                                setTpoEvents(prev => prev.map(e => e.id === event.id ? { ...e, ...updated } : e))
-                              }
-                            } catch {}
-                          }}>Mark Completed</Button>
                         </div>
                         {openEventId === event.id && (
                           <div className="mt-4 border-t pt-4">
@@ -2398,7 +2545,12 @@ export default function TPODashboard() {
                         setRejectUserId(null)
                         setRejectFileId(null)
                         setRejectReason('')
-                        fetchTpoAndData()
+                        // Remove the rejected item from the appropriate list
+                        if (rejectUserId) {
+                          setPendingProfiles(prev => prev.filter(profile => profile.id !== rejectUserId));
+                        } else if (rejectFileId) {
+                          setPendingResumes(prev => prev.filter(resume => resume.id !== rejectFileId));
+                        }
                         alert(rejectFileId ? 'Resume rejected' : 'Profile rejected')
                       } else {
                         try {

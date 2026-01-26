@@ -48,8 +48,8 @@ export default function StudentDashboard() {
     companyName: '',
     offerLetterUrl: ''
   })
-  const [jobListings, setJobListings] = useState<Array<{id: number, title: string, company: string, location: string, job_type?: string, type?: string, posted?: string, deadline?: string, salary?: string, description?: string, requirements?: string, job_url?: string}>>([])
-  const [events, setEvents] = useState<Array<{id: number, title: string, location: string, status?: string, date?: string, time?: string, category?: string, description?: string, form_url?: string, created_at?: string}>>([])
+  const [jobListings, setJobListings] = useState<Array<{id: number, title: string, company: string, location: string, job_type?: string, type?: string, posted?: string, deadline?: string, salary?: string, description?: string, requirements?: string, job_url?: string, total_positions?: number}>>([])
+  const [events, setEvents] = useState<Array<{id: number, title: string, location: string, status?: string, date?: string, time?: string, category?: string, description?: string, form_url?: string, created_at?: string, event_type?: string, capacity?: number, is_online?: boolean, meeting_link?: string, registered_count?: number}>>([])
   const [notifications, setNotifications] = useState<Array<{id: number, title: string, message: string, time: string, read: boolean, sent_by?: number}>>([])
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set())
 
@@ -864,23 +864,40 @@ export default function StudentDashboard() {
                             <span>Posted: {job.posted ? new Date(job.posted).toLocaleString() : '—'}</span>
                             {job.deadline && <span className="ml-4">Deadline: {new Date(job.deadline).toLocaleDateString()}</span>}
                           </div>
-                          {job.salary && (
-                            <div className="mt-3">
-                              <p className="text-sm text-gray-700"><span className="font-medium">Salary Range:</span> {job.salary}</p>
+                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="font-medium text-gray-800 mb-2">Job Description</p>
+                              <p className="text-gray-700 whitespace-pre-wrap">{job.description || '—'}</p>
                             </div>
-                          )}
-                          <div className="mt-4">
-                            <p className="font-medium text-gray-800 mb-2">Job Description</p>
-                            <p className="text-gray-700 whitespace-pre-wrap">{job.description || '—'}</p>
+                            <div>
+                              <p className="font-medium text-gray-800 mb-2">Requirements / Qualifications</p>
+                              <p className="text-gray-700 whitespace-pre-wrap">{job.requirements || '—'}</p>
+                            </div>
                           </div>
-                          <div className="mt-4">
-                            <p className="font-medium text-gray-800 mb-2">Requirements / Qualifications</p>
-                            <p className="text-gray-700 whitespace-pre-wrap">{job.requirements || '—'}</p>
+                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="font-medium text-gray-800 mb-2">Job Type</p>
+                              <p className="text-gray-700">{job.job_type || job.type || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800 mb-2">Application Deadline</p>
+                              <p className="text-gray-700">{job.deadline ? new Date(job.deadline).toLocaleDateString() : '—'}</p>
+                            </div>
+                          </div>
+                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <p className="font-medium text-gray-800 mb-2">Salary Range</p>
+                              <p className="text-gray-700">{job.salary || '—'}</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800 mb-2">Number of Openings</p>
+                              <p className="text-gray-700">{job.total_positions || '1'}</p>
+                            </div>
                           </div>
                           {job.job_url && (
                             <div className="mt-3">
                               <p className="font-medium text-gray-800 mb-1">Application URL</p>
-                              <a className="underline text-maroon break-all" href={job.job_url} target="_blank" rel="noreferrer">{job.job_url}</a>
+                              <a className="underline text-maroon break-all" href={job.job_url || '#'} target="_blank" rel="noreferrer">{job.job_url || '—'}</a>
                             </div>
                           )}
                           <div className="mt-6 flex flex-wrap gap-3">
@@ -891,7 +908,8 @@ export default function StudentDashboard() {
                                   try {
                                     const stored = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
                                     const current = stored ? JSON.parse(stored) : null
-                                    const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current?.email)}`)
+                                    if (!current?.email) return;
+                                    const userRes = await fetch(`${API_BASE}/api/v1/users/by-email/${encodeURIComponent(current.email)}`)
                                     if (userRes.ok) {
                                       const u = await userRes.json()
                                       if (job.job_url) {
@@ -926,8 +944,8 @@ export default function StudentDashboard() {
                                           if (job.job_url) {
                                               // Give a small delay to ensure the alert is seen before redirect
                                               setTimeout(() => {
-                                                  const w = window.open(job.job_url, '_blank')
-                                                  if (!w) { const a=document.createElement('a'); a.href=job.job_url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
+                                                  const w = window.open(job.job_url!, '_blank')
+                                                  if (!w) { const a=document.createElement('a'); a.href=job.job_url!; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
                                               }, 100)
                                           }
                                       } else {
@@ -1004,14 +1022,46 @@ export default function StudentDashboard() {
                               <Badge className="bg-gray-100 text-gray-800">{event.category}</Badge>
                             </div>
                           )}
+
                         </div>
                         <div className="mt-3 text-sm text-gray-500">
                           <span>Posted: {event.created_at ? new Date(event.created_at).toLocaleString() : '—'}</span>
                         </div>
                         <div className="mt-4">
-                          <p className="font-medium text-gray-800 mb-2">Description / Agenda</p>
+                          <p className="font-medium text-gray-800 mb-2">Description</p>
                           <p className="text-gray-700 whitespace-pre-wrap">{event.description || '—'}</p>
                         </div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="font-medium text-gray-800 mb-1">Event Type</p>
+                            <p className="text-gray-700">{event.event_type || '—'}</p>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800 mb-1">Capacity</p>
+                            <p className="text-gray-700">{event.capacity ? `${event.capacity} participants` : 'Unlimited'}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="font-medium text-gray-800 mb-1">Format</p>
+                            <p className="text-gray-700">{event.is_online ? 'Online' : 'In-Person'}</p>
+                          </div>
+                          {event.meeting_link && (
+                            <div>
+                              <p className="font-medium text-gray-800 mb-1">Meeting Link</p>
+                              <a className="underline text-maroon break-all" href={event.meeting_link} target="_blank" rel="noreferrer">Join Meeting</a>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-4">
+                          <p className="font-medium text-gray-800 mb-1">Registration Form URL</p>
+                          <a className="underline text-maroon break-all" href={event.form_url || '#'} target="_blank" rel="noreferrer">{event.form_url || '—'}</a>
+                        </div>
+                        <div className="mt-4">
+                          <p className="font-medium text-gray-800 mb-1">Category</p>
+                          <p className="text-gray-700">{event.category || '—'}</p>
+                        </div>
+
                         {event.form_url && (
                           <div className="mt-3">
                             <p className="font-medium text-gray-800 mb-1">Attachments / Resources</p>

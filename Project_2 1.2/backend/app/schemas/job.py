@@ -10,6 +10,7 @@ class JobBase(BaseModel):
     requirements: str
     salary_range: Optional[str] = None
     job_url: Optional[str] = None
+    total_positions: Optional[int] = 1
 
 class JobCreate(JobBase):
     application_deadline: Optional[datetime] = None
@@ -26,6 +27,7 @@ class JobUpdate(BaseModel):
     is_active: Optional[bool] = None
     status: Optional[str] = None  # Allow status field from frontend
     job_url: Optional[str] = None
+    total_positions: Optional[int] = None
     
     def convert_status_to_is_active(self):
         """Convert status string to is_active boolean"""
@@ -41,6 +43,7 @@ class JobResponse(JobBase):
     created_by: int
     created_at: datetime
     updated_at: Optional[datetime] = None
+    total_positions: Optional[int] = 1
     
     class Config:
         from_attributes = True

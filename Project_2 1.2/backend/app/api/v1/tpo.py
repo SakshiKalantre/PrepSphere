@@ -5,6 +5,14 @@ from typing import List, Optional, Any
 from pydantic import BaseModel
 from datetime import datetime
 
+class ProfileApproveRequest(BaseModel):
+    notes: Optional[str] = None
+    sent_by: Optional[int] = None
+
+class ProfileRejectRequest(BaseModel):
+    reason: str
+    sent_by: Optional[int] = None
+
 from app.db.session import get_db
 from app.models.user import User, UserRole, Profile
 from app.models.job import Job, JobApplication
@@ -437,6 +445,41 @@ def delete_tpo_event(event_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Event deleted successfully"}
 
+@router.post("/events/{event_id}/reminders")
+def send_event_reminders(event_id: int, db: Session = Depends(get_db)):
+    # Get the event
+    event = db.query(Event).filter(Event.id == event_id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    
+    # Get all users registered for this event
+    registrations = db.query(EventRegistration).filter(
+        EventRegistration.event_id == event_id
+    ).all()
+    
+    # Get the users who registered
+    user_ids = [reg.user_id for reg in registrations]
+    users = db.query(User).filter(User.id.in_(user_ids)).all()
+    
+    # Create notifications for each registered user
+    reminder_title = f"Reminder: {event.title}"
+    reminder_message = f"Don't forget about the event '{event.title}' happening on {event.event_date.strftime('%B %d, %Y')} at {event.location}."
+    
+    for user in users:
+        notification = Notification(
+            user_id=user.id,
+            title=reminder_title,
+            message=reminder_message,
+            notification_type=NotificationType.EVENT_REMINDER,
+            is_read=False
+        )
+        db.add(notification)
+    
+    db.commit()
+    
+    return {"message": f"Reminders sent to {len(users)} registered users", "count": len(users)}
+
+
 @router.get("/events/{event_id}/registrations")
 def get_event_registrations(event_id: int, db: Session = Depends(get_db)):
     # Custom response structure as needed by frontend
@@ -453,3 +496,101 @@ def get_event_registrations(event_id: int, db: Session = Depends(get_db)):
             "registered_at": reg.registered_at
         })
     return result
+
+
+# --- Profiles Approval ---
+
+@router.put("/profiles/{user_id}/approve")
+def approve_profile(
+    user_id: int,
+    request: ProfileApproveRequest,
+    db: Session = Depends(get_db)
+):
+    # Find the user's profile
+    profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Get the user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    profile.is_approved = True
+    profile.approval_status = 'Approved'
+    if request.notes:
+        profile.approval_notes = request.notes
+    
+    # Also update user approval status so the student appears in approved students
+    user.is_approved = True
+    
+    db.commit()
+    db.refresh(profile)
+    db.refresh(user)
+    
+    # Create notification for the user
+    notification = Notification(
+        user_id=user.id,
+        title="Profile Approved",
+        message=f"Your profile has been approved by the TPO.{f' Notes: {request.notes}' if request.notes else ''}",
+        sent_by=request.sent_by,
+        notification_type=NotificationType.SYSTEM
+    )
+    
+    db.add(notification)
+    db.commit()
+    
+    return {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "is_approved": profile.is_approved,
+        "approval_status": profile.approval_status
+    }
+
+
+@router.put("/profiles/{user_id}/reject")
+def reject_profile(
+    user_id: int,
+    request: ProfileRejectRequest,
+    db: Session = Depends(get_db)
+):
+    # Find the user's profile
+    profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+    if not profile:
+        raise HTTPException(status_code=404, detail="Profile not found")
+    
+    # Get the user
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    profile.is_approved = False
+    profile.approval_status = 'Rejected'
+    if request.reason:
+        profile.approval_notes = request.reason
+    
+    # Also update user approval status
+    user.is_approved = False
+    
+    db.commit()
+    db.refresh(profile)
+    db.refresh(user)
+    
+    # Create notification for the user
+    notification = Notification(
+        user_id=user.id,
+        title="Profile Rejected",
+        message=request.reason or "Your profile was rejected.",
+        sent_by=request.sent_by,
+        notification_type=NotificationType.SYSTEM
+    )
+    
+    db.add(notification)
+    db.commit()
+    
+    return {
+        "id": profile.id,
+        "user_id": profile.user_id,
+        "is_approved": profile.is_approved,
+        "approval_status": profile.approval_status
+    }
