@@ -34,3 +34,21 @@ class EventResponse(EventBase):
     
     class Config:
         from_attributes = True
+
+
+class EventRegistrationBase(BaseModel):
+    event_id: int
+    user_id: int
+
+
+class EventRegistrationCreate(EventRegistrationBase):
+    pass
+
+
+class EventRegistrationResponse(EventRegistrationBase):
+    id: int
+    registration_status: str
+    registered_at: datetime
+    
+    class Config:
+        from_attributes = True

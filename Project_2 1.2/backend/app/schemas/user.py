@@ -35,6 +35,7 @@ class UserResponse(UserBase):
 
 class ProfileBase(BaseModel):
     phone: Optional[str] = None
+    full_name: Optional[str] = None
     degree: Optional[str] = None
     year: Optional[str] = None
     skills: Optional[str] = None
@@ -44,6 +45,11 @@ class ProfileBase(BaseModel):
     company_name: Optional[str] = None
     offer_letter_url: Optional[str] = None
     approval_status: Optional[str] = "Pending"
+    
+    # Unplaced reason fields
+    unplaced_reason: Optional[str] = None
+    custom_reason_text: Optional[str] = None
+    has_uploaded_documents: Optional[bool] = False
 
 class ProfileCreate(ProfileBase):
     user_id: int

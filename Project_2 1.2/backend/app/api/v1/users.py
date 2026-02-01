@@ -39,8 +39,11 @@ def get_user_by_email_path(email: str, db: Session = Depends(get_db)):
     return {
         "id": db_user.id,
         "email": db_user.email,
+        "first_name": db_user.first_name,
+        "last_name": db_user.last_name,
         "role": db_user.role.value if hasattr(db_user.role, "value") else db_user.role,
-        "clerk_user_id": db_user.clerk_user_id
+        "clerk_user_id": db_user.clerk_user_id,
+        "phone_number": db_user.phone_number
     }
 
 @router.post("/", response_model=UserResponse)
@@ -108,6 +111,99 @@ def register_user(
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Automatically update analytics percentages when new user is registered
+    if role_upper == 'STUDENT':
+        try:
+            from app.models.analytics import AnalyticsPercentages
+            from sqlalchemy import func
+            
+            # Get the counts needed for calculations
+            total_students = db.query(User).filter(User.role == 'STUDENT').count()
+            
+            # Count placed students - properly joined with students
+            placed_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+                (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+                Profile.placement_status == 'Placed'
+            ).count()
+            
+            # Count unplaced students - properly joined with students
+            unplaced_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+                (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+                Profile.placement_status == 'Not Placed'
+            ).count()
+            
+            # Count unplaced students by reason
+            higher_studies_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+                (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+                Profile.placement_status == 'Not Placed',
+                Profile.unplaced_reason == 'Higher Studies'
+            ).count()
+            
+            exploring_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+                (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+                Profile.placement_status == 'Not Placed',
+                Profile.unplaced_reason == 'Exploring'
+            ).count()
+            
+            others_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+                (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+                Profile.placement_status == 'Not Placed',
+                Profile.unplaced_reason == 'Others'
+            ).count()
+            
+            # Calculate percentages using the provided formulas:
+            placed_percentage = (placed_students / total_students * 100) if total_students > 0 else 0
+            unplaced_percentage = (unplaced_students / total_students * 100) if total_students > 0 else 0
+            higher_studies_percentage = (higher_studies_count / unplaced_students * 100) if unplaced_students > 0 else 0
+            exploring_percentage = (exploring_count / unplaced_students * 100) if unplaced_students > 0 else 0
+            others_percentage = (others_count / unplaced_students * 100) if unplaced_students > 0 else 0
+            
+            # Calculate placement rate percentage - same as placed percentage
+            placement_rate_percentage = placed_percentage
+            
+            # Update or create the analytics percentages record
+            existing_record = db.query(AnalyticsPercentages).order_by(AnalyticsPercentages.id.desc()).first()
+            
+            if existing_record:
+                # Update the existing record
+                existing_record.placed_percentage = placed_percentage
+                existing_record.unplaced_percentage = unplaced_percentage
+                existing_record.higher_studies_percentage = higher_studies_percentage
+                existing_record.exploring_percentage = exploring_percentage
+                existing_record.others_percentage = others_percentage
+                existing_record.placement_rate_percentage = placement_rate_percentage
+                existing_record.total_students = total_students
+                existing_record.placed_students = placed_students
+                existing_record.unplaced_students = unplaced_students
+                existing_record.higher_studies_count = higher_studies_count
+                existing_record.exploring_count = exploring_count
+                existing_record.others_count = others_count
+            else:
+                # Create a new record
+                analytics_percentages = AnalyticsPercentages(
+                    placed_percentage=placed_percentage,
+                    unplaced_percentage=unplaced_percentage,
+                    higher_studies_percentage=higher_studies_percentage,
+                    exploring_percentage=exploring_percentage,
+                    others_percentage=others_percentage,
+                    placement_rate_percentage=placement_rate_percentage,
+                    total_students=total_students,
+                    placed_students=placed_students,
+                    unplaced_students=unplaced_students,
+                    higher_studies_count=higher_studies_count,
+                    exploring_count=exploring_count,
+                    others_count=others_count
+                )
+                db.add(analytics_percentages)
+            
+            db.commit()
+            print("Analytics percentages updated automatically after user registration")
+            
+        except Exception as e:
+            print(f"Error updating analytics percentages after user registration: {e}")
+            # Don't fail the user registration if analytics update fails
+            db.rollback()
     
     return {"id": db_user.id, "email": db_user.email, "role": db_user.role.value}
 
@@ -372,13 +468,135 @@ def create_user_profile(user_id: int, profile: ProfileBase, db: Session = Depend
     db.add(db_profile)
     db.commit()
     db.refresh(db_profile)
+    
+    # Automatically update analytics percentages after profile creation
+    try:
+        from app.models.analytics import AnalyticsPercentages
+        from sqlalchemy import func
+        
+        # Get the counts needed for calculations
+        total_students = db.query(User).filter(User.role == 'STUDENT').count()
+        
+        # Count placed students - properly joined with students
+        placed_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Placed'
+        ).count()
+        
+        # Count unplaced students - properly joined with students
+        unplaced_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed'
+        ).count()
+        
+        # Count unplaced students by reason
+        higher_studies_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Higher Studies'
+        ).count()
+        
+        exploring_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Exploring'
+        ).count()
+        
+        others_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Others'
+        ).count()
+        
+        # Calculate percentages using the provided formulas:
+        placed_percentage = (placed_students / total_students * 100) if total_students > 0 else 0
+        unplaced_percentage = (unplaced_students / total_students * 100) if total_students > 0 else 0
+        higher_studies_percentage = (higher_studies_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        exploring_percentage = (exploring_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        others_percentage = (others_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        
+        # Calculate placement rate percentage - same as placed percentage
+        placement_rate_percentage = placed_percentage
+        
+        # Update or create the analytics percentages record
+        existing_record = db.query(AnalyticsPercentages).order_by(AnalyticsPercentages.id.desc()).first()
+        
+        if existing_record:
+            # Update the existing record
+            existing_record.placed_percentage = placed_percentage
+            existing_record.unplaced_percentage = unplaced_percentage
+            existing_record.higher_studies_percentage = higher_studies_percentage
+            existing_record.exploring_percentage = exploring_percentage
+            existing_record.others_percentage = others_percentage
+            existing_record.placement_rate_percentage = placement_rate_percentage
+            existing_record.total_students = total_students
+            existing_record.placed_students = placed_students
+            existing_record.unplaced_students = unplaced_students
+            existing_record.higher_studies_count = higher_studies_count
+            existing_record.exploring_count = exploring_count
+            existing_record.others_count = others_count
+        else:
+            # Create a new record
+            analytics_percentages = AnalyticsPercentages(
+                placed_percentage=placed_percentage,
+                unplaced_percentage=unplaced_percentage,
+                higher_studies_percentage=higher_studies_percentage,
+                exploring_percentage=exploring_percentage,
+                others_percentage=others_percentage,
+                placement_rate_percentage=placement_rate_percentage,
+                total_students=total_students,
+                placed_students=placed_students,
+                unplaced_students=unplaced_students,
+                higher_studies_count=higher_studies_count,
+                exploring_count=exploring_count,
+                others_count=others_count
+            )
+            db.add(analytics_percentages)
+        
+        db.commit()
+        print("Analytics percentages updated automatically after profile creation")
+        
+    except Exception as e:
+        print(f"Error updating analytics percentages: {e}")
+        # Don't fail the profile creation if analytics update fails
+        db.rollback()
+        
     return db_profile
 
 @router.get("/{user_id}/profile", response_model=ProfileResponse)
 def get_user_profile(user_id: int, db: Session = Depends(get_db)):
     db_profile = db.query(Profile).filter(Profile.user_id == user_id).first()
     if not db_profile:
-        raise HTTPException(status_code=404, detail="Profile not found")
+        # Check if user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Create profile with full name from user's first and last name
+        full_name_parts = [user.first_name, user.last_name]
+        full_name = ' '.join(part for part in full_name_parts if part and part.strip())
+        
+        db_profile = Profile(
+            user_id=user_id,
+            full_name=full_name or None
+        )
+        db.add(db_profile)
+        db.commit()
+    elif not db_profile.full_name:
+        # If profile exists but full_name is missing, populate it
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            full_name_parts = [user.first_name, user.last_name]
+            full_name = ' '.join(part for part in full_name_parts if part and part.strip())
+            if full_name:
+                db_profile.full_name = full_name
+                db.commit()
+    
+    print(f"Returning profile for user {user_id}: {db_profile.full_name}")  # Debug log
+    print(f"Full name type: {type(db_profile.full_name)}")  # Debug log
+    print(f"Full name length: {len(db_profile.full_name) if db_profile.full_name else 0}")  # Debug log
+    print(f"Company name in profile: {db_profile.company_name}")  # Debug log
+    print(f"Company name type: {type(db_profile.company_name)}")  # Debug log
     return db_profile
 
 @router.put("/{user_id}/profile", response_model=ProfileResponse)
@@ -388,9 +606,174 @@ def update_user_profile(user_id: int, profile_update: ProfileUpdate, db: Session
         raise HTTPException(status_code=404, detail="Profile not found")
     
     update_data = profile_update.dict(exclude_unset=True)
+    print(f"Update data received: {update_data}")  # Debug log
+    print(f"Company name in update data: {update_data.get('company_name')}")  # Debug log
+    print(f"Unplaced reason in update data: {update_data.get('unplaced_reason')}")  # Debug log
+    print(f"Custom reason text in update data: {update_data.get('custom_reason_text')}")  # Debug log
+    print(f"Has uploaded documents in update data: {update_data.get('has_uploaded_documents')}")  # Debug log
+    
+    # Get user's first_name and last_name to construct full_name only if not provided in request
+    if 'full_name' not in update_data:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            # Construct full name from first_name and last_name
+            full_name_parts = [user.first_name, user.last_name]
+            full_name = ' '.join(part for part in full_name_parts if part and part.strip())
+            if full_name:
+                update_data['full_name'] = full_name
+    
+    # Handle placement status updates
+    placement_updated = False
+    if update_data.get('placement_status') == 'Placed' and update_data.get('offer_letter_url'):
+        # Automatically update the placement status to 'Placed' when both conditions are met
+        setattr(db_profile, 'placement_status', 'Placed')
+        setattr(db_profile, 'offer_letter_url', update_data.get('offer_letter_url'))
+        # Clear unplaced reason fields when status is placed
+        setattr(db_profile, 'unplaced_reason', None)
+        setattr(db_profile, 'custom_reason_text', None)
+        setattr(db_profile, 'has_uploaded_documents', False)
+        placement_updated = True
+    elif update_data.get('placement_status') == 'Not Placed':
+        # Validate unplaced reason when placement status is 'Not Placed'
+        unplaced_reason = update_data.get('unplaced_reason')
+        if not unplaced_reason:
+            raise HTTPException(status_code=400, detail="Unplaced reason is required when placement status is 'Not Placed'")
+        
+        # Validate based on the selected reason
+        if unplaced_reason == 'Higher Studies':
+            # For Higher Studies, check if documents are uploaded
+            has_docs = update_data.get('has_uploaded_documents')
+            if not has_docs:
+                raise HTTPException(status_code=400, detail="Documents must be uploaded for Higher Studies reason")
+        elif unplaced_reason == 'Others':
+            # For Others, check if custom reason text is provided
+            custom_text = update_data.get('custom_reason_text')
+            if not custom_text or not custom_text.strip():
+                raise HTTPException(status_code=400, detail="Custom reason text is required when selecting 'Others' as unplaced reason")
+        elif unplaced_reason != 'Exploring':
+            # Valid reasons are 'Higher Studies', 'Exploring', or 'Others'
+            raise HTTPException(status_code=400, detail="Invalid unplaced reason. Must be 'Higher Studies', 'Exploring', or 'Others'")
+        
+        setattr(db_profile, 'placement_status', 'Not Placed')
+        setattr(db_profile, 'unplaced_reason', unplaced_reason)
+        setattr(db_profile, 'custom_reason_text', update_data.get('custom_reason_text'))
+        setattr(db_profile, 'has_uploaded_documents', update_data.get('has_uploaded_documents', False))
+        
+        # Log the values being set
+        print(f"Setting unplaced_reason to: {unplaced_reason}")
+        print(f"Setting custom_reason_text to: {update_data.get('custom_reason_text')}")
+        print(f"Setting has_uploaded_documents to: {update_data.get('has_uploaded_documents', False)}")
+        # Clear the offer letter URL if status is changed to Not Placed
+        if hasattr(db_profile, 'offer_letter_url'):
+            setattr(db_profile, 'offer_letter_url', None)
+        placement_updated = True
+    
+    # Apply all other updates normally, including company_name
     for key, value in update_data.items():
+        # Skip placement-related fields if they were already handled
+        if placement_updated and key in ['placement_status', 'offer_letter_url']:
+            continue
+        print(f"Setting {key} to {value}")  # Debug log
         setattr(db_profile, key, value)
     
     db.commit()
     db.refresh(db_profile)
+    
+    # Log the final values after commit
+    print(f"Final unplaced_reason in DB: {db_profile.unplaced_reason}")
+    print(f"Final custom_reason_text in DB: {db_profile.custom_reason_text}")
+    print(f"Final has_uploaded_documents in DB: {db_profile.has_uploaded_documents}")
+    
+    # Automatically update analytics percentages after profile changes
+    try:
+        from app.models.analytics import AnalyticsPercentages
+        from sqlalchemy import func
+        
+        # Get the counts needed for calculations
+        total_students = db.query(User).filter(User.role == 'STUDENT').count()
+        
+        # Count placed students - properly joined with students
+        placed_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Placed'
+        ).count()
+        
+        # Count unplaced students - properly joined with students
+        unplaced_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed'
+        ).count()
+        
+        # Count unplaced students by reason
+        higher_studies_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Higher Studies'
+        ).count()
+        
+        exploring_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Exploring'
+        ).count()
+        
+        others_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Others'
+        ).count()
+        
+        # Calculate percentages using the provided formulas:
+        placed_percentage = (placed_students / total_students * 100) if total_students > 0 else 0
+        unplaced_percentage = (unplaced_students / total_students * 100) if total_students > 0 else 0
+        higher_studies_percentage = (higher_studies_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        exploring_percentage = (exploring_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        others_percentage = (others_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        
+        # Calculate placement rate percentage - same as placed percentage
+        placement_rate_percentage = placed_percentage
+        
+        # Update or create the analytics percentages record
+        existing_record = db.query(AnalyticsPercentages).order_by(AnalyticsPercentages.id.desc()).first()
+        
+        if existing_record:
+            # Update the existing record
+            existing_record.placed_percentage = placed_percentage
+            existing_record.unplaced_percentage = unplaced_percentage
+            existing_record.higher_studies_percentage = higher_studies_percentage
+            existing_record.exploring_percentage = exploring_percentage
+            existing_record.others_percentage = others_percentage
+            existing_record.placement_rate_percentage = placement_rate_percentage
+            existing_record.total_students = total_students
+            existing_record.placed_students = placed_students
+            existing_record.unplaced_students = unplaced_students
+            existing_record.higher_studies_count = higher_studies_count
+            existing_record.exploring_count = exploring_count
+            existing_record.others_count = others_count
+        else:
+            # Create a new record
+            analytics_percentages = AnalyticsPercentages(
+                placed_percentage=placed_percentage,
+                unplaced_percentage=unplaced_percentage,
+                higher_studies_percentage=higher_studies_percentage,
+                exploring_percentage=exploring_percentage,
+                others_percentage=others_percentage,
+                placement_rate_percentage=placement_rate_percentage,
+                total_students=total_students,
+                placed_students=placed_students,
+                unplaced_students=unplaced_students,
+                higher_studies_count=higher_studies_count,
+                exploring_count=exploring_count,
+                others_count=others_count
+            )
+            db.add(analytics_percentages)
+        
+        db.commit()
+        print("Analytics percentages updated automatically after profile change")
+        
+    except Exception as e:
+        print(f"Error updating analytics percentages: {e}")
+        # Don't fail the profile update if analytics update fails
+        db.rollback()
+    
     return db_profile

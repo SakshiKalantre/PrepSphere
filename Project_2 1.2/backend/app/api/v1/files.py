@@ -102,6 +102,20 @@ async def upload_r2_multipart(
     db.commit()
     db.refresh(db_file)
     
+    # If this is an offer letter, automatically update the user's placement status to 'Placed'
+    if file_type == 'offer_letter':
+        from app.models.user import Profile
+        profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+        if profile:
+            profile.placement_status = 'Placed'
+            profile.offer_letter_url = file_url
+            db.commit()
+        else:
+            # Create a profile if it doesn't exist
+            profile = Profile(user_id=user_id, placement_status='Placed', offer_letter_url=file_url)
+            db.add(profile)
+            db.commit()
+    
     return db_file
 
 @router.post("/upload")
@@ -175,6 +189,20 @@ async def upload_base64(
     db.commit()
     db.refresh(db_file)
     
+    # If this is an offer letter, automatically update the user's placement status to 'Placed'
+    if file_type == 'offer_letter':
+        from app.models.user import Profile
+        profile = db.query(Profile).filter(Profile.user_id == user_id).first()
+        if profile:
+            profile.placement_status = 'Placed'
+            profile.offer_letter_url = file_url
+            db.commit()
+        else:
+            # Create a profile if it doesn't exist
+            profile = Profile(user_id=user_id, placement_status='Placed', offer_letter_url=file_url)
+            db.add(profile)
+            db.commit()
+    
     return db_file
 
 @router.post("/upload-r2")
@@ -202,35 +230,47 @@ async def get_presigned_url(file_id: int, db: Session = Depends(get_db)):
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
 
+    # Check if this is an R2 file (Cloudflare)
     is_r2 = False
     if s3_client and settings.R2_BUCKET_NAME:
+        # R2 file paths typically start with user_id (digit) and don't contain "uploads"
         if file.file_path and file.file_path[0].isdigit() and "uploads" not in file.file_path:
              is_r2 = True
 
     if is_r2:
         try:
+            # Generate presigned URL for R2
             url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': settings.R2_BUCKET_NAME, 'Key': file.file_path},
                 ExpiresIn=3600
             )
+            print(f"Generated presigned URL for file {file_id}: {file.file_path}")
             return {"url": url}
         except ClientError as e:
-            raise HTTPException(status_code=500, detail="Failed to generate presigned URL")
+            print(f"R2 presigned URL generation failed for file {file_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to generate presigned URL: {str(e)}")
+        except Exception as e:
+            print(f"Unexpected error generating presigned URL for file {file_id}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
     
-    # If local, maybe return a download URL?
-    # Or just raise error as this endpoint implies presigned (cloud) URL
-    # But for compatibility, we can return the local download URL if it exists
+    # For local files, return the download endpoint URL
     if os.path.exists(file.file_path):
          return {"url": f"{settings.API_V1_STR}/files/{file.id}/download"}
 
-    raise HTTPException(status_code=400, detail="Not a cloud file")
+    # If it's a direct URL (from previous system), return that
+    if file.file_url and file.file_url.startswith("http"):
+        return {"url": file.file_url}
+
+    raise HTTPException(status_code=400, detail="File type not supported for presigned URLs")
 
 @router.get("/{file_id}/download")
 async def download_file(file_id: int, db: Session = Depends(get_db)):
     file = db.query(FileUpload).filter(FileUpload.id == file_id).first()
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
+
+    print(f"Downloading file {file_id}: {file.file_name} (path: {file.file_path})")
 
     # Determine if file is likely in R2 or Local
     # R2 keys are typically "user_id/filename" (starting with digit)
@@ -240,29 +280,36 @@ async def download_file(file_id: int, db: Session = Depends(get_db)):
         # Check if it looks like an R2 key (starts with digit and has no "uploads")
         if file.file_path and file.file_path[0].isdigit() and "uploads" not in file.file_path:
              is_r2 = True
+             print(f"File {file_id} identified as R2 file")
 
     if is_r2:
          try:
+            # Generate presigned URL and redirect
             url = s3_client.generate_presigned_url(
                 'get_object',
                 Params={'Bucket': settings.R2_BUCKET_NAME, 'Key': file.file_path},
                 ExpiresIn=3600
             )
+            print(f"Generated R2 download URL for file {file_id}")
             from fastapi.responses import RedirectResponse
             return RedirectResponse(url)
-         except:
-             pass
+         except Exception as e:
+             print(f"R2 download failed for file {file_id}: {str(e)}")
+             # Continue to other options
     
-    # If local
+    # If local file exists
     if os.path.exists(file.file_path):
+        print(f"Serving local file for file {file_id}")
         from fastapi.responses import FileResponse
         return FileResponse(file.file_path, filename=file.file_name, media_type=file.mime_type)
         
     # If file_url is a full URL (e.g. from previous system)
     if file.file_url and file.file_url.startswith("http"):
+        print(f"Redirecting to external URL for file {file_id}")
         from fastapi.responses import RedirectResponse
         return RedirectResponse(file.file_url)
 
+    print(f"File content not found for file {file_id}")
     raise HTTPException(status_code=404, detail="File content not found")
 
 
@@ -295,6 +342,28 @@ async def verify_file(
     
     db.commit()
     db.refresh(file_record)
+    
+    # If this is an offer letter and it's being verified, update the user's placement status
+    if file_record.file_type == 'offer_letter' and is_verified:
+        from app.models.user import Profile
+        profile = db.query(Profile).filter(Profile.user_id == user.id).first()
+        if profile:
+            profile.placement_status = 'Placed'
+            profile.offer_letter_url = file_record.file_url
+            db.commit()
+        else:
+            # Create a profile if it doesn't exist
+            profile = Profile(user_id=user.id, placement_status='Placed', offer_letter_url=file_record.file_url)
+            db.add(profile)
+            db.commit()
+    elif file_record.file_type == 'offer_letter' and not is_verified:
+        # If an offer letter is being unverified, set placement status back to Not Placed
+        from app.models.user import Profile
+        profile = db.query(Profile).filter(Profile.user_id == user.id).first()
+        if profile:
+            profile.placement_status = 'Not Placed'
+            profile.offer_letter_url = None
+            db.commit()
     
     # Create notification for the user
     from app.models.notification import Notification, NotificationType

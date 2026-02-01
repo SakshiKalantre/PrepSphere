@@ -8,13 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 
 // Import Recharts components
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell } from 'recharts';
 
 export default function HomePage() {
   const { isSignedIn, user } = useUser()
   const [stats, setStats] = useState<any>(null)
   const [breakdown, setBreakdown] = useState<any[]>([])
-  const [placementByYear, setPlacementByYear] = useState<any[]>([])
+  const [placementDistribution, setPlacementDistribution] = useState<any[]>([])
   const [localUser, setLocalUser] = useState<any>(null)
   // State to track visibility of hidden sections (Selections count, Real-time insights)
   const [showHiddenInsights, setShowHiddenInsights] = useState(false)
@@ -87,32 +87,33 @@ export default function HomePage() {
             setBreakdown(data)
         }
         
-        // Fetch placement percentage by year
-        const resPlacementByYear = await fetch(`${API_BASE}/api/v1/stats/placement-percentage-by-year`);
-        if (resPlacementByYear.ok) {
-          const data = await resPlacementByYear.json();
-          setPlacementByYear(data);
+        // Fetch placement distribution
+        const resDistribution = await fetch(`${API_BASE}/api/v1/stats/analytics-percentages`);
+        if (resDistribution.ok) {
+          const data = await resDistribution.json();
+          setPlacementDistribution([
+            { name: 'Placed', percentage: data.placed_percentage },
+            { name: 'Higher Studies', percentage: data.higher_studies_percentage },
+            { name: 'Exploring Opportunities', percentage: data.exploring_percentage },
+            { name: 'Others', percentage: data.others_percentage },
+          ]);
         } else {
-          // Fallback data for years 2023-2028
-          setPlacementByYear([
-            { year: '2023', percentage: 0 },
-            { year: '2024', percentage: 0 },
-            { year: '2025', percentage: 13 },
-            { year: '2026', percentage: 0 },
-            { year: '2027', percentage: 0 },
-            { year: '2028', percentage: 0 }
+          // Fallback data
+          setPlacementDistribution([
+            { name: 'Placed', percentage: 0 },
+            { name: 'Higher Studies', percentage: 0 },
+            { name: 'Exploring Opportunities', percentage: 0 },
+            { name: 'Others', percentage: 0 },
           ]);
         }
       } catch (error) {
         console.error('Failed to fetch stats:', error)
         // Set fallback data in case of error
-        setPlacementByYear([
-          { year: '2023', percentage: 0 },
-          { year: '2024', percentage: 0 },
-          { year: '2025', percentage: 13 },
-          { year: '2026', percentage: 0 },
-          { year: '2027', percentage: 0 },
-          { year: '2028', percentage: 0 }
+        setPlacementDistribution([
+          { name: 'Placed', percentage: 0 },
+          { name: 'Higher Studies', percentage: 0 },
+          { name: 'Exploring Opportunities', percentage: 0 },
+          { name: 'Others', percentage: 0 },
         ]);
       }
     }
@@ -247,45 +248,70 @@ export default function HomePage() {
 
             <div className="grid md:grid-cols-2 gap-12">
                 <div className="bg-cream p-8 rounded-xl shadow-md">
-                    <h3 className="text-2xl font-bold text-maroon mb-6">Placement Percentage by Year</h3>
+                    <h3 className="text-2xl font-bold text-maroon mb-6">Placement Distribution</h3>
                     <div className="h-80">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
-                                data={placementByYear}
+                                data={placementDistribution}
                                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                             >
-                                <CartesianGrid strokeDasharray="3 3" />
+                                <defs>
+                                    <linearGradient id="colorPlaced" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#60A5FA" />
+                                        <stop offset="100%" stopColor="#1E40AF" />
+                                    </linearGradient>
+                                    <linearGradient id="colorHigher" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#FDBA74" />
+                                        <stop offset="100%" stopColor="#C2410C" />
+                                    </linearGradient>
+                                    <linearGradient id="colorExploring" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#FEF08A" />
+                                        <stop offset="100%" stopColor="#EAB308" />
+                                    </linearGradient>
+                                    <linearGradient id="colorOthers" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="#5EEAD4" />
+                                        <stop offset="100%" stopColor="#0F766E" />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" strokeOpacity={0.5} />
                                 <XAxis 
-                                    dataKey="year" 
-                                    angle={-45} 
-                                    textAnchor="end" 
+                                    dataKey="name" 
+                                    tick={{ fill: '#4b5563', fontSize: 10 }} 
+                                    axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.5 }} 
+                                    tickLine={false} 
+                                    interval={0}
+                                    angle={-15}
+                                    textAnchor="end"
                                     height={60}
-                                    tick={{ fontSize: 12 }}
+                                    label={{ value: 'Placement Categories', position: 'insideBottom', offset: -5, fill: '#4b5563', fontSize: 12, fontWeight: 'bold' }}
                                 />
                                 <YAxis 
                                     domain={[0, 100]} 
-                                    tickCount={6}
-                                    tickFormatter={(value) => `${value}%`}
+                                    tick={{ fill: '#4b5563', fontSize: 12 }} 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft', fill: '#4b5563', fontSize: 12, fontWeight: 'bold' }}
                                 />
                                 <Tooltip 
-                                    formatter={(value) => [`${value}%`, 'Percentage']}
-                                    labelFormatter={(label) => `Academic Year: ${label}`}
+                                    cursor={{ fill: 'transparent' }}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                    formatter={(value: any) => [`${Number(value).toFixed(1)}%`, 'Percentage']}
                                 />
-                                <Bar 
-                                    dataKey="percentage" 
-                                    fill="#7A1F2A" 
-                                    name="Placement Percentage"
-                                    radius={[4, 4, 0, 0]}
-                                >
-                                    {placementByYear.map((entry, index) => (
-                                        <LabelList 
-                                            key={`label-${index}`}
-                                            dataKey="percentage" 
-                                            position="top" 
-                                            formatter={(value: any) => `${value}%`}
-                                            style={{ fill: '#000', fontSize: 12, fontWeight: 'bold' }}
-                                        />
-                                    ))}
+                                <Bar dataKey="percentage" radius={[8, 8, 0, 0]} barSize={60}>
+                                    {placementDistribution.map((entry, index) => {
+                                        let fillId = 'colorOthers';
+                                        if (entry.name === 'Placed') fillId = 'colorPlaced';
+                                        else if (entry.name === 'Higher Studies') fillId = 'colorHigher';
+                                        else if (entry.name.includes('Exploring')) fillId = 'colorExploring';
+                                        
+                                        return <Cell key={`cell-${index}`} fill={`url(#${fillId})`} />;
+                                    })}
+                                    <LabelList 
+                                        dataKey="percentage" 
+                                        position="top" 
+                                        formatter={(value: any) => `${Number(value).toFixed(1)}%`} 
+                                        style={{ fill: '#374151', fontWeight: 'bold', fontSize: '12px' }} 
+                                    />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>

@@ -36,6 +36,11 @@ export default function StudentDashboard() {
   const [resumeProgress, setResumeProgress] = useState<number>(0)
   const [certProgress, setCertProgress] = useState<number>(0)
   const [offerProgress, setOfferProgress] = useState<number>(0)
+  
+  // State for Higher Studies document upload
+  const [hasUploadedDocuments, setHasUploadedDocuments] = useState<boolean>(false)
+  const [higherStudiesDocFile, setHigherStudiesDocFile] = useState<File | null>(null)
+  const [higherStudiesDocProgress, setHigherStudiesDocProgress] = useState<number>(0)
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -46,7 +51,10 @@ export default function StudentDashboard() {
     about: '',
     placementStatus: 'Not Placed',
     companyName: '',
-    offerLetterUrl: ''
+    offerLetterUrl: '',
+    unplacedReason: '',
+    customReasonText: '',
+    has_uploaded_documents: false
   })
   const [jobListings, setJobListings] = useState<Array<{id: number, title: string, company: string, location: string, job_type?: string, type?: string, posted?: string, deadline?: string, salary?: string, description?: string, requirements?: string, job_url?: string, total_positions?: number}>>([])
   const [events, setEvents] = useState<Array<{id: number, title: string, location: string, status?: string, date?: string, time?: string, category?: string, description?: string, form_url?: string, created_at?: string, event_type?: string, capacity?: number, is_online?: boolean, meeting_link?: string, registered_count?: number}>>([])
@@ -100,7 +108,10 @@ export default function StudentDashboard() {
               about: profileData.about || '',
               placementStatus: profileData.placement_status || 'Not Placed',
               companyName: profileData.company_name || '',
-              offerLetterUrl: profileData.offer_letter_url || ''
+              offerLetterUrl: profileData.offer_letter_url || '',
+              unplacedReason: profileData.unplaced_reason || '',
+              customReasonText: profileData.custom_reason_text || '',
+              has_uploaded_documents: profileData.has_uploaded_documents || false
             }))
           }
 
@@ -226,34 +237,73 @@ export default function StudentDashboard() {
   const handleSaveProfile = async () => {
     try {
       if (!userId) return
-      await fetch(`${API_BASE}/api/v1/users/${userId}/profile`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: profile.phone || null,
-          degree: profile.degree || null,
-          year: profile.year || null,
-          skills: profile.skills || null,
-          about: profile.about || null,
-        })
-      })
-
-      // Update placement status
+      
+      // Update placement status validation
       if (profile.placementStatus === 'Placed') {
           if (!profile.companyName) { alert('Company Name is required'); return }
           if (!profile.offerLetterUrl) { alert('Offer Letter upload is required'); return }
+      } else if (profile.placementStatus === 'Not Placed') {
+          // Validate unplaced reason
+          if (!profile.unplacedReason) {
+              alert('Unplaced reason is required when placement status is Not Placed');
+              return;
+          }
+          
+          if (profile.unplacedReason === 'Higher Studies') {
+              // For Higher Studies, check if documents are uploaded
+              if (!profile.has_uploaded_documents) {
+                  alert('Documents must be uploaded for Higher Studies reason');
+                  return;
+              }
+          } else if (profile.unplacedReason === 'Others') {
+              // For Others, check if custom reason text is provided
+              if (!profile.customReasonText || !profile.customReasonText.trim()) {
+                  alert('Custom reason text is required when selecting Others as unplaced reason');
+                  return;
+              }
+          } else if (profile.unplacedReason !== 'Exploring') {
+              // Valid reasons are 'Higher Studies', 'Exploring', or 'Others'
+              alert('Invalid unplaced reason. Must be Higher Studies, Exploring, or Others');
+              return;
+          }
       }
-
-      await fetch(`${API_BASE}/api/v1/student/placement/${userId}`, {
+      
+      // Prepare profile update data
+      const profileUpdateData: any = {
+        phone: profile.phone || null,
+        degree: profile.degree || null,
+        year: profile.year || null,
+        skills: profile.skills || null,
+        about: profile.about || null,
+        placement_status: profile.placementStatus,
+        company_name: profile.placementStatus === 'Placed' ? profile.companyName : null,
+        offer_letter_url: profile.placementStatus === 'Placed' ? profile.offerLetterUrl : null,
+      };
+      
+      // Add unplaced reason fields only when placement status is 'Not Placed'
+      if (profile.placementStatus === 'Not Placed') {
+        profileUpdateData.unplaced_reason = profile.unplacedReason;
+        profileUpdateData.custom_reason_text = profile.unplacedReason === 'Others' ? profile.customReasonText : null;
+        profileUpdateData.has_uploaded_documents = profile.unplacedReason === 'Higher Studies' ? profile.has_uploaded_documents : false;
+      }
+      
+      // Log the data being sent for debugging
+      console.log('Sending profile update data:', profileUpdateData);
+      
+      // Send profile data to the profile endpoint
+      const profileResponse = await fetch(`${API_BASE}/api/v1/users/${userId}/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            placement_status: profile.placementStatus,
-            company_name: profile.placementStatus === 'Placed' ? profile.companyName : null,
-            offer_letter_url: profile.placementStatus === 'Placed' ? profile.offerLetterUrl : null
-        })
-      })
-
+        body: JSON.stringify(profileUpdateData)
+      });
+      
+      if (!profileResponse.ok) {
+        const errorText = await profileResponse.text();
+        console.error('Profile update error:', errorText);
+        alert('Failed to save profile: ' + errorText);
+        return;
+      }
+      
       // Also update name in users table if changed
       const [firstName, ...rest] = (profile.name || '').split(' ')
       const lastName = rest.join(' ')
@@ -265,9 +315,10 @@ export default function StudentDashboard() {
       
       alert('Profile saved successfully!')
       setIsEditing(false)
-    } catch (e) {
-      console.error(e)
-      alert('Failed to save profile. Please try again.')
+    } catch (e: unknown) {
+      console.error('Save profile error:', String(e))
+      const errorMessage = e instanceof Error ? e.message : 'Unknown error';
+      alert('Failed to save profile. Please try again. Error: ' + errorMessage);
     }
   }
 
@@ -288,7 +339,76 @@ export default function StudentDashboard() {
     reader.onerror = reject
     reader.readAsDataURL(file)
   })
-
+  
+  // Function to handle Higher Studies document upload
+  const handleHigherStudiesDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      setHigherStudiesDocFile(file);
+    }
+  };
+  
+  // Function to submit Higher Studies documents
+  const submitHigherStudiesDocuments = async () => {
+    if (!userId || !higherStudiesDocFile) return;
+    
+    try {
+      const base64 = await toBase64(higherStudiesDocFile);
+      
+      const payload = {
+        user_id: userId,
+        file_name: higherStudiesDocFile.name,
+        file_type: 'higher_studies_doc',
+        mime_type: higherStudiesDocFile.type || 'application/octet-stream',
+        content_base64: base64,
+      };
+      
+      const response = await fetch(`${API_BASE}/api/v1/files/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert('Document uploaded successfully');
+        setHasUploadedDocuments(true);
+        setHigherStudiesDocFile(null);
+        setHigherStudiesDocProgress(0);
+        
+        // Also update the profile with the document upload status
+        setProfile({
+          ...profile,
+          has_uploaded_documents: true
+        });
+        
+        // Refresh the user files list to include the newly uploaded document
+        await refreshUserFiles();
+      } else {
+        const errorText = await response.text();
+        console.error('Upload error response:', errorText);
+        alert('Failed to upload document: ' + errorText);
+      }
+    } catch (error: unknown) {
+      console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert('Error uploading document: ' + errorMessage);
+    }
+  };
+  
+  const refreshUserFiles = async () => {
+    try {
+      if (!userId) return;
+      const filesRes = await fetch(`${API_BASE}/api/v1/files/by-user/${userId}`);
+      if (filesRes.ok) {
+        const filesData = await filesRes.json();
+        setUserFiles(filesData);
+      }
+    } catch (error) {
+      console.error('Error refreshing user files:', error);
+    }
+  };
+  
   const postJSONWithProgress = (url: string, payload: any, setProgress: (n:number)=>void) => new Promise<Response>((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', url)
@@ -668,7 +788,9 @@ export default function StudentDashboard() {
                             id="placementStatus"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             value={profile.placementStatus}
-                            onChange={(e) => setProfile({...profile, placementStatus: e.target.value})}
+                            onChange={(e) => {
+                              setProfile({...profile, placementStatus: e.target.value, unplacedReason: '', customReasonText: ''});
+                            }}
                           >
                             <option value="Not Placed">Not Placed</option>
                             <option value="Placed">Placed</option>
@@ -696,7 +818,101 @@ export default function StudentDashboard() {
                           )}
                         </div>
                       )}
+                      {profile.placementStatus === 'Not Placed' && isEditing && (
+                        <div>
+                          <Label htmlFor="unplacedReason">Unplaced Reason</Label>
+                          <select
+                            id="unplacedReason"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={profile.unplacedReason}
+                            onChange={(e) => {
+                              setProfile({...profile, unplacedReason: e.target.value, customReasonText: ''});
+                            }}
+                          >
+                            <option value="">Select reason</option>
+                            <option value="Higher Studies">Higher Studies</option>
+                            <option value="Exploring">Exploring Other Opportunities</option>
+                            <option value="Others">Others</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
+                    
+                    {/* Conditional fields based on unplaced reason */}
+                    {profile.placementStatus === 'Not Placed' && profile.unplacedReason === 'Higher Studies' && isEditing && (
+                      <div className="mt-4">
+                        <div className="mb-4">
+                          <Label>Are you enrolled or have you applied for higher studies?</Label>
+                          <div className="flex space-x-4 mt-2">
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="higherStudiesYes"
+                                name="higherStudiesConfirmation"
+                                checked={hasUploadedDocuments}
+                                onChange={() => setHasUploadedDocuments(true)}
+                                className="mr-2"
+                              />
+                              <Label htmlFor="higherStudiesYes">Yes</Label>
+                            </div>
+                            <div className="flex items-center">
+                              <input
+                                type="radio"
+                                id="higherStudiesNo"
+                                name="higherStudiesConfirmation"
+                                checked={!hasUploadedDocuments}
+                                onChange={() => setHasUploadedDocuments(false)}
+                                className="mr-2"
+                              />
+                              <Label htmlFor="higherStudiesNo">No</Label>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="mb-4">
+                          <Label>Upload Documents (Choose one or more)</Label>
+                          <div className="mt-2 space-y-2">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png"
+                                onChange={handleHigherStudiesDocumentUpload}
+                                className="block w-full text-sm text-gray-500
+                                  file:mr-4 file:py-2 file:px-4
+                                  file:rounded-md file:border-0
+                                  file:text-sm file:font-semibold
+                                  file:bg-maroon file:text-white
+                                  hover:file:bg-opacity-80"
+                              />
+                              <Button type="button" onClick={submitHigherStudiesDocuments} disabled={!higherStudiesDocFile}>
+                                Upload
+                              </Button>
+                            </div>
+                            {higherStudiesDocProgress > 0 && (
+                              <div className="mt-2 h-2 w-full bg-gray-200 rounded">
+                                <div className="h-2 bg-gold rounded" style={{ width: `${higherStudiesDocProgress}%` }} />
+                                <p className="text-xs text-gray-600 mt-1">{higherStudiesDocProgress}%</p>
+                              </div>
+                            )}
+                            <p className="text-xs text-gray-600 mt-1">Upload CET / GATE / CAT scorecard OR college admission fee receipt (PDF, JPG, PNG files up to 500 KB)</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {profile.placementStatus === 'Not Placed' && profile.unplacedReason === 'Others' && isEditing && (
+                      <div className="mt-4">
+                        <Label htmlFor="customReasonText">Please specify the reason in detail</Label>
+                        <textarea
+                          id="customReasonText"
+                          value={profile.customReasonText}
+                          onChange={(e) => setProfile({...profile, customReasonText: e.target.value})}
+                          className="flex min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          placeholder="Enter your custom reason"
+                          rows={3}
+                        />
+                      </div>
+                    )}
                   </div>
                   
                   <div className="mt-8">

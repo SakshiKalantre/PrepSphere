@@ -9,8 +9,91 @@ from app.models.job import Job, JobApplication
 from app.models.event import Event, EventRegistration
 from app.models.notification import Notification, NotificationType
 from app.models.file import FileUpload
+from app.models.analytics import AnalyticsPercentages
+from app.schemas.analytics import AnalyticsPercentagesResponse
+
+print("Loading public.py module...")
 
 router = APIRouter()
+
+@router.get("/public/test")
+def test_endpoint():
+    return {"message": "Hello"}
+
+@router.get("/stats/analytics-percentages")
+def get_public_analytics_percentages(db: Session = Depends(get_db)):
+    """Public endpoint to get placement distribution percentages"""
+    print("Executing get_public_analytics_percentages endpoint")
+    # Get the latest record
+    latest_record = db.query(AnalyticsPercentages).order_by(AnalyticsPercentages.id.desc()).first()
+    
+    if not latest_record:
+        # Calculate if no record exists
+        # Get the counts needed for calculations
+        total_students = db.query(User).filter(User.role == UserRole.STUDENT).count()
+        
+        # Count placed students
+        placed_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Placed'
+        ).count()
+        
+        # Count unplaced students
+        unplaced_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed'
+        ).count()
+        
+        # Count unplaced students by reason
+        higher_studies_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Higher Studies'
+        ).count()
+        
+        exploring_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Exploring'
+        ).count()
+        
+        others_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+            (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+            Profile.placement_status == 'Not Placed',
+            Profile.unplaced_reason == 'Others'
+        ).count()
+        
+        # Calculate percentages
+        placed_percentage = (placed_students / total_students * 100) if total_students > 0 else 0
+        unplaced_percentage = (unplaced_students / total_students * 100) if total_students > 0 else 0
+        
+        higher_studies_percentage = (higher_studies_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        exploring_percentage = (exploring_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        others_percentage = (others_count / unplaced_students * 100) if unplaced_students > 0 else 0
+        
+        placement_rate_percentage = placed_percentage
+        
+        # Create a new record
+        latest_record = AnalyticsPercentages(
+            placed_percentage=placed_percentage,
+            unplaced_percentage=unplaced_percentage,
+            higher_studies_percentage=higher_studies_percentage,
+            exploring_percentage=exploring_percentage,
+            others_percentage=others_percentage,
+            placement_rate_percentage=placement_rate_percentage,
+            total_students=total_students,
+            placed_students=placed_students,
+            unplaced_students=unplaced_students,
+            higher_studies_count=higher_studies_count,
+            exploring_count=exploring_count,
+            others_count=others_count
+        )
+        
+        db.add(latest_record)
+        db.commit()
+        db.refresh(latest_record)
+    
+    return AnalyticsPercentagesResponse.from_orm(latest_record)
 
 @router.get("/public/stats")
 def get_public_stats(db: Session = Depends(get_db)):

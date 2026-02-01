@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TPO Dashboard Debug</title>
+</head>
+<body>
+    <h1>TPO Dashboard Debug Tool</h1>
+    <button onclick="testApprovedStudents()">Test Approved Students Data</button>
+    <button onclick="testFileEndpoints()">Test File Endpoints</button>
+    <div id="output" style="margin-top: 20px; white-space: pre-wrap; font-family: monospace;"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        const output = document.getElementById('output');
+
+        async function log(message) {
+            console.log(message);
+            output.textContent += message + '\n';
+        }
+
+        async function testApprovedStudents() {
+            output.textContent = '';
+            try {
+                log('Fetching approved students...');
+                const response = await fetch(`${API_BASE}/api/v1/tpo/approved-students`);
+                log(`Status: ${response.status}`);
+                
+                if (!response.ok) {
+                    log(`Error: ${response.statusText}`);
+                    return;
+                }
+                
+                const students = await response.json();
+                log(`Found ${students.length} approved students:`);
+                
+                students.forEach((student, index) => {
+                    log(`\nStudent ${index + 1}:`);
+                    log(`  ID: ${student.user_id}`);
+                    log(`  Name: ${student.first_name} ${student.last_name}`);
+                    log(`  Email: ${student.email}`);
+                    log(`  Placement Status: ${student.placement_status}`);
+                    log(`  Company: ${student.company_name || 'N/A'}`);
+                    log(`  Offer Letter URL: ${student.offer_letter_url || 'None'}`);
+                    log(`  Offer Letter ID: ${student.offer_letter_id || 'None'}`);
+                    
+                    // Test the file endpoints for this student
+                    if (student.offer_letter_id) {
+                        testFileEndpoint(student.offer_letter_id, `Student ${index + 1}`);
+                    }
+                });
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+
+        async function testFileEndpoint(fileId, studentLabel) {
+            try {
+                log(`\nTesting file ${fileId} for ${studentLabel}:`);
+                
+                // Test presigned URL
+                const presignedResponse = await fetch(`${API_BASE}/api/v1/files/${fileId}/presigned`);
+                log(`  Presigned URL Status: ${presignedResponse.status}`);
+                
+                if (presignedResponse.ok) {
+                    const presignedData = await presignedResponse.json();
+                    log(`  Presigned URL: ${presignedData.url ? 'Generated successfully' : 'No URL returned'}`);
+                } else {
+                    log(`  Presigned URL Error: ${await presignedResponse.text()}`);
+                }
+                
+                // Test download endpoint
+                const downloadResponse = await fetch(`${API_BASE}/api/v1/files/${fileId}/download`, { redirect: 'manual' });
+                log(`  Download Endpoint Status: ${downloadResponse.status}`);
+                
+                if ([301, 302, 307, 308].includes(downloadResponse.status)) {
+                    log(`  Redirect Location: ${downloadResponse.headers.get('Location') || 'None'}`);
+                } else if (downloadResponse.ok) {
+                    log(`  Direct Content Type: ${downloadResponse.headers.get('Content-Type') || 'Unknown'}`);
+                } else {
+                    log(`  Download Error: ${await downloadResponse.text()}`);
+                }
+            } catch (error) {
+                log(`  File Endpoint Error: ${error.message}`);
+            }
+        }
+
+        async function testFileEndpoints() {
+            output.textContent = '';
+            try {
+                // Test with known file IDs from our previous test
+                const testFileIds = [2, 11]; // From our earlier successful test
+                
+                for (const fileId of testFileIds) {
+                    await testFileEndpoint(fileId, `Test File ${fileId}`);
+                }
+            } catch (error) {
+                log(`Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

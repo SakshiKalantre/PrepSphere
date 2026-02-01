@@ -127,6 +127,11 @@ export default function TPODashboard() {
     inactiveJobs: 0,
     placedStudents: 0,
     unplacedStudents: 0,
+    unplacedReasons: {
+      higherStudies: 0,
+      exploring: 0,
+      others: 0
+    },
     totalEvents: 0,
     upcomingEvents: 0,
     completedEvents: 0,
@@ -308,11 +313,9 @@ export default function TPODashboard() {
         inactiveJobs = jobsData.length - activeJobs
       }
       
-      // Fetch placed students data
-      const placedStudents = approvedStudents.filter((student: any) => 
-        student.placement_status === 'Placed' || student.has_verified_offer_letter
-      ).length
-      const unplacedStudents = approvedStudents.length - placedStudents
+      // Fetch placed and unplaced students data from the backend stats
+      const placedStudents = stats.total_placed || 0
+      const unplacedStudents = stats.total_unplaced || 0
       
       // Fetch event data
       const eventsRes = await fetch(`${API_BASE_DEFAULT}/api/v1/events`)
@@ -420,6 +423,7 @@ export default function TPODashboard() {
         inactiveJobs,
         placedStudents,
         unplacedStudents,
+        unplacedReasons: stats.unplaced_reasons || prev.unplacedReasons,
         totalEvents,
         upcomingEvents,
         completedEvents,
@@ -969,72 +973,163 @@ export default function TPODashboard() {
                         </Card>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Card className="border-none shadow-md">
-                          <CardHeader>
-                            <CardTitle>Placed vs Unplaced Students</CardTitle>
+                      {/* Unplaced Students by Reason - Full Width */}
+                      <div className="mb-8">
+                        <Card className="border-none shadow-lg rounded-xl overflow-hidden bg-white">
+                          <CardHeader className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 pb-4">
+                            <CardTitle className="text-xl font-bold text-gray-800">Unplaced Students Analysis</CardTitle>
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="p-8">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                              {/* Total Unplaced Circle */}
+                              <div className="flex flex-col items-center justify-center p-6 bg-red-50 rounded-full h-40 w-40 border-4 border-red-100 shadow-sm">
+                                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total</span>
+                                <span className="text-4xl font-extrabold text-red-600">{tpoAnalytics.unplacedStudents || 0}</span>
+                                <span className="text-xs text-gray-400 mt-1">Unplaced</span>
+                              </div>
+                              
+                              {/* Reasons Grid */}
+                              <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-blue-600 font-semibold">Higher Studies</span>
+                                    <span className="bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded-full">Reason</span>
+                                  </div>
+                                  <div className="text-2xl font-bold text-gray-800">{tpoAnalytics.unplacedReasons?.higherStudies || 0}</div>
+                                  <div className="w-full bg-blue-200 h-1.5 mt-3 rounded-full overflow-hidden">
+                                    <div 
+                                      className="bg-blue-500 h-full rounded-full" 
+                                      style={{ width: `${tpoAnalytics.unplacedStudents ? ((tpoAnalytics.unplacedReasons?.higherStudies || 0) / tpoAnalytics.unplacedStudents * 100) : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-purple-600 font-semibold">Exploring</span>
+                                    <span className="bg-purple-200 text-purple-800 text-xs px-2 py-1 rounded-full">Reason</span>
+                                  </div>
+                                  <div className="text-2xl font-bold text-gray-800">{tpoAnalytics.unplacedReasons?.exploring || 0}</div>
+                                  <div className="w-full bg-purple-200 h-1.5 mt-3 rounded-full overflow-hidden">
+                                    <div 
+                                      className="bg-purple-500 h-full rounded-full" 
+                                      style={{ width: `${tpoAnalytics.unplacedStudents ? ((tpoAnalytics.unplacedReasons?.exploring || 0) / tpoAnalytics.unplacedStudents * 100) : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-gray-600 font-semibold">Others</span>
+                                    <span className="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">Reason</span>
+                                  </div>
+                                  <div className="text-2xl font-bold text-gray-800">{tpoAnalytics.unplacedReasons?.others || 0}</div>
+                                  <div className="w-full bg-gray-200 h-1.5 mt-3 rounded-full overflow-hidden">
+                                    <div 
+                                      className="bg-gray-500 h-full rounded-full" 
+                                      style={{ width: `${tpoAnalytics.unplacedStudents ? ((tpoAnalytics.unplacedReasons?.others || 0) / tpoAnalytics.unplacedStudents * 100) : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="border-none shadow-lg rounded-xl overflow-hidden bg-white">
+                          <CardHeader className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 pb-4">
+                            <CardTitle className="text-xl font-bold text-gray-800">Placed vs Unplaced Students</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-6">
                             <div className="h-64">
                               <ResponsiveContainer width="100%" height="100%">
                                 <RechartsPieChart>
+                                  <defs>
+                                    <linearGradient id="tpoGradientPlaced" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#3B82F6" />
+                                      <stop offset="100%" stopColor="#2563EB" />
+                                    </linearGradient>
+                                    <linearGradient id="tpoGradientUnplaced" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#F97316" />
+                                      <stop offset="100%" stopColor="#EA580C" />
+                                    </linearGradient>
+                                    <filter id="tpoShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                      <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2"/>
+                                    </filter>
+                                  </defs>
                                   <Pie
                                     data={placedUnplacedData}
                                     cx="50%"
                                     cy="50%"
                                     labelLine={false}
-                                    outerRadius={60}
-                                    fill="#8884d8"
+                                    outerRadius={80}
+                                    innerRadius={0}
                                     dataKey="value"
-                                    label={(props) => {
-                                      const { name, percent } = props;
-                                      return `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`;
-                                    }}
+                                    stroke="none"
+                                    style={{ filter: 'url(#tpoShadow)' }}
+                                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
                                   >
-                                    {placedUnplacedData.map((entry: any, index: number) => (
-                                      <Cell key={`cell-${index}`} fill={PLACEMENT_COLORS[index % PLACEMENT_COLORS.length]} />
-                                    ))}
+                                    <Cell key="cell-placed" fill="url(#tpoGradientPlaced)" />
+                                    <Cell key="cell-unplaced" fill="url(#tpoGradientUnplaced)" />
                                   </Pie>
-                                  <Tooltip />
-                                  <Legend />
+                                  <Tooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                  />
+                                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </RechartsPieChart>
                               </ResponsiveContainer>
                             </div>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
-                          <CardHeader>
-                            <CardTitle>Active vs Inactive Jobs</CardTitle>
+                        <Card className="border-none shadow-lg rounded-xl overflow-hidden bg-white">
+                          <CardHeader className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 pb-4">
+                            <CardTitle className="text-xl font-bold text-gray-800">Active vs Inactive Jobs</CardTitle>
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="p-6">
                             <div className="h-64">
                               <ResponsiveContainer width="100%" height="100%">
                                 <RechartsPieChart>
+                                  <defs>
+                                    <linearGradient id="tpoGradientActive" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#34D399" />
+                                      <stop offset="100%" stopColor="#059669" />
+                                    </linearGradient>
+                                    <linearGradient id="tpoGradientInactive" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor="#FBBF24" />
+                                      <stop offset="100%" stopColor="#D97706" />
+                                    </linearGradient>
+                                    <filter id="tpoShadow2" x="-20%" y="-20%" width="140%" height="140%">
+                                      <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2"/>
+                                    </filter>
+                                  </defs>
                                   <Pie
                                     data={activeInactiveData}
                                     cx="50%"
                                     cy="50%"
                                     labelLine={false}
-                                    outerRadius={60}
-                                    fill="#8884d8"
+                                    outerRadius={80}
+                                    innerRadius={0}
                                     dataKey="value"
-                                    label={(props) => {
-                                      const { name, percent } = props;
-                                      return `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`;
-                                    }}
+                                    stroke="none"
+                                    style={{ filter: 'url(#tpoShadow2)' }}
+                                    label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
                                   >
-                                    {activeInactiveData.map((entry: any, index: number) => (
-                                      <Cell key={`cell-${index}`} fill={JOB_STATUS_COLORS[index % JOB_STATUS_COLORS.length]} />
-                                    ))}
+                                    <Cell key="cell-active" fill="url(#tpoGradientActive)" />
+                                    <Cell key="cell-inactive" fill="url(#tpoGradientInactive)" />
                                   </Pie>
-                                  <Tooltip />
-                                  <Legend />
+                                  <Tooltip 
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                  />
+                                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
                                 </RechartsPieChart>
                               </ResponsiveContainer>
                             </div>
                           </CardContent>
                         </Card>
+                        
                       </div>
                       
                       <Card className="border-none shadow-md">
@@ -1472,25 +1567,57 @@ export default function TPODashboard() {
                                 </Button>
                             )}
                             
-                            {s.offer_letter_url && (
+                            {(s.offer_letter_url || (s.offer_letter_id && s.offer_letter_id > 0)) && (
                                 <>
                                 <Button variant="outline" size="sm" className="text-green-700 border-green-200 hover:bg-green-50" onClick={async()=> {
-                                    if (s.offer_letter_id) {
+                                    console.log(`View Offer Letter clicked for student ${s.user_id}`);
+                                    console.log(`  Offer Letter URL: ${s.offer_letter_url}`);
+                                    console.log(`  Offer Letter ID: ${s.offer_letter_id}`);
+
+                                    // Priority 1: If we have a valid file ID, use the file system
+                                    if (s.offer_letter_id && s.offer_letter_id > 0) {
+                                        const fileId = s.offer_letter_id;
+                                        console.log(`Using file ID: ${fileId}`);
+                                        
                                         try {
-                                            const pres = await fetch(`${API_BASE_DEFAULT}/api/v1/files/${s.offer_letter_id}/presigned`)
+                                            // Try presigned URL first (most reliable)
+                                            console.log('Trying presigned URL...');
+                                            const pres = await fetch(`${API_BASE_DEFAULT}/api/v1/files/${fileId}/presigned`);
+                                            console.log(`Presigned URL status: ${pres.status}`);
+                                            
                                             if (pres.ok) {
-                                                const { url } = await pres.json()
-                                                const w = window.open(url, '_blank')
-                                                if (!w) { const a=document.createElement('a'); a.href=url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
-                                                return
+                                                const data = await pres.json();
+                                                const url = data.url;
+                                                if (url) {
+                                                    console.log('Opening presigned URL');
+                                                    window.open(url, '_blank');
+                                                    return;
+                                                }
+                                            } else {
+                                                const errorText = await pres.text();
+                                                console.log(`Presigned URL failed: ${pres.status} - ${errorText}`);
                                             }
-                                            const url = `${API_BASE_DEFAULT}/api/v1/files/${s.offer_letter_id}/download`
-                                            const w = window.open(url, '_blank')
-                                            if (!w) { const a=document.createElement('a'); a.href=url; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove() }
-                                        } catch { window.open(s.offer_letter_url, '_blank') }
-                                    } else {
-                                        window.open(s.offer_letter_url, '_blank')
+                                            
+                                            // Fallback to direct download
+                                            console.log('Trying direct download...');
+                                            const downloadUrl = `${API_BASE_DEFAULT}/api/v1/files/${fileId}/download`;
+                                            window.open(downloadUrl, '_blank');
+                                            return;
+                                        } catch (error) {
+                                            console.error('File system error:', error);
+                                        }
                                     }
+
+                                    // Priority 2: Fall back to direct URL if available
+                                    if (s.offer_letter_url) {
+                                        console.log('Falling back to direct URL');
+                                        window.open(s.offer_letter_url, '_blank');
+                                        return;
+                                    }
+
+                                    // Nothing available
+                                    console.log('No offer letter available');
+                                    alert('Offer letter not available');
                                 }}>
                                     <CheckCircle className="h-4 w-4 mr-2" /> View Offer Letter
                                 </Button>
@@ -2375,7 +2502,7 @@ export default function TPODashboard() {
                                     <h4 className="font-semibold">{msg.name}</h4>
                                     {!msg.is_read && <Badge className="ml-2" variant="default">New</Badge>}
                                   </div>
-                                  <p className="text-sm text-gray-600">{msg.email}</p>
+                                  <a href={`mailto:${msg.email}`} className="text-sm text-blue-600 hover:underline">{msg.email}</a>
                                   <p className="mt-2 text-gray-800">{msg.message}</p>
                                 </div>
                                 <div className="text-right">

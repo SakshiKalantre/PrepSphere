@@ -51,6 +51,7 @@ class Profile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
     phone = Column(String, nullable=True)
+    full_name = Column(String, nullable=True)
     degree = Column(String, nullable=True)
     year = Column(String, nullable=True)
     skills = Column(Text, nullable=True)  # Comma-separated skills
@@ -63,6 +64,11 @@ class Profile(Base):
     approval_status = Column(String, default='Pending')
     company_name = Column(String, nullable=True)
     offer_letter_url = Column(String, nullable=True)
+    
+    # Unplaced reason fields
+    unplaced_reason = Column(String, nullable=True)
+    custom_reason_text = Column(Text, nullable=True)
+    has_uploaded_documents = Column(Boolean, default=False)
     
     is_approved = Column(Boolean, default=False)
     approval_notes = Column(Text, nullable=True)

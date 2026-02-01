@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 
 // Recharts imports
-import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, LabelList } from 'recharts';
 
 export default function AdminDashboard() {
   const { user } = useUser()
@@ -56,6 +56,11 @@ export default function AdminDashboard() {
     totalTPO: 0,
     placedStudents: 0,
     unplacedStudents: 0,
+    unplacedReasons: {
+      higherStudies: 0,
+      exploring: 0,
+      others: 0
+    },
     activeJobs: 0,
     inactiveJobs: 0,
     totalApplications: 0,
@@ -68,6 +73,14 @@ export default function AdminDashboard() {
     totalJobs: 0,
     activeUsers: 0,
     inactiveUsers: 0
+  })
+  
+  const [analyticsPercentages, setAnalyticsPercentages] = useState({
+    placed_percentage: 0,
+    unplaced_percentage: 0,
+    higher_studies_percentage: 0,
+    exploring_percentage: 0,
+    others_percentage: 0
   })
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
   const [analyticsError, setAnalyticsError] = useState<string | null>(null)
@@ -114,6 +127,44 @@ export default function AdminDashboard() {
     }
   }
 
+  const fetchAnalyticsPercentages = async () => {
+    try {
+      console.log('Fetching analytics percentages from:', `${API_BASE}/api/v1/admin/analytics-percentages`);
+      const res = await fetch(`${API_BASE}/api/v1/admin/analytics-percentages`)
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Analytics percentages data received:', data);
+        setAnalyticsPercentages({
+          placed_percentage: data.placed_percentage || 0,
+          unplaced_percentage: data.unplaced_percentage || 0,
+          higher_studies_percentage: data.higher_studies_percentage || 0,
+          exploring_percentage: data.exploring_percentage || 0,
+          others_percentage: data.others_percentage || 0
+        });
+      } else {
+        console.error('Analytics percentages API error:', res.status, res.statusText);
+        // If the endpoint doesn't exist, fall back to calculating from analytics data
+        setAnalyticsPercentages({
+          placed_percentage: analytics.placedStudents > 0 && analytics.totalStudents > 0 ? (analytics.placedStudents / analytics.totalStudents) * 100 : 0,
+          unplaced_percentage: analytics.unplacedStudents > 0 && analytics.totalStudents > 0 ? (analytics.unplacedStudents / analytics.totalStudents) * 100 : 0,
+          higher_studies_percentage: analytics.unplacedReasons.higherStudies > 0 && analytics.totalStudents > 0 ? (analytics.unplacedReasons.higherStudies / analytics.totalStudents) * 100 : 0,
+          exploring_percentage: analytics.unplacedReasons.exploring > 0 && analytics.totalStudents > 0 ? (analytics.unplacedReasons.exploring / analytics.totalStudents) * 100 : 0,
+          others_percentage: analytics.unplacedReasons.others > 0 && analytics.totalStudents > 0 ? (analytics.unplacedReasons.others / analytics.totalStudents) * 100 : 0
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching analytics percentages:', error);
+      // Fall back to calculating from analytics data
+      setAnalyticsPercentages({
+        placed_percentage: analytics.placedStudents > 0 && analytics.totalStudents > 0 ? (analytics.placedStudents / analytics.totalStudents) * 100 : 0,
+        unplaced_percentage: analytics.unplacedStudents > 0 && analytics.totalStudents > 0 ? (analytics.unplacedStudents / analytics.totalStudents) * 100 : 0,
+        higher_studies_percentage: analytics.unplacedReasons.higherStudies > 0 && analytics.totalStudents > 0 ? (analytics.unplacedReasons.higherStudies / analytics.totalStudents) * 100 : 0,
+        exploring_percentage: analytics.unplacedReasons.exploring > 0 && analytics.totalStudents > 0 ? (analytics.unplacedReasons.exploring / analytics.totalStudents) * 100 : 0,
+        others_percentage: analytics.unplacedReasons.others > 0 && analytics.totalStudents > 0 ? (analytics.unplacedReasons.others / analytics.totalStudents) * 100 : 0
+      });
+    }
+  }
+
   const fetchContactMessages = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/contact/contact-messages`)
@@ -127,6 +178,7 @@ export default function AdminDashboard() {
     fetchPendingCertificates()
     fetchUsers()
     fetchAnalytics()
+    fetchAnalyticsPercentages()
   },[API_BASE])
 
   // Effect to apply filters
@@ -648,7 +700,10 @@ export default function AdminDashboard() {
                   <div className="flex space-x-2">
                     <Button 
                       variant="outline" 
-                      onClick={fetchAnalytics}
+                      onClick={() => {
+                        fetchAnalytics();
+                        fetchAnalyticsPercentages();
+                      }}
                       className="flex items-center gap-2"
                     >
                       <RefreshCw className="h-4 w-4" />
@@ -839,44 +894,138 @@ export default function AdminDashboard() {
                         </Card>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <Card className="border-none shadow-md">
-                          <CardHeader>
-                            <CardTitle>Students Placement Status</CardTitle>
+                      {/* Unplaced Students by Reason - Full Width */}
+                      <div className="mb-6">
+                        <Card className="border-none shadow-lg rounded-xl overflow-hidden bg-white">
+                          <CardHeader className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 pb-4">
+                            <CardTitle className="text-xl font-bold text-gray-800">Unplaced Students Analysis</CardTitle>
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="p-8">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                              {/* Total Unplaced Circle */}
+                              <div className="flex flex-col items-center justify-center p-6 bg-red-50 rounded-full h-40 w-40 border-4 border-red-100 shadow-sm">
+                                <span className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total</span>
+                                <span className="text-4xl font-extrabold text-red-600">{analytics.unplacedStudents}</span>
+                                <span className="text-xs text-gray-400 mt-1">Unplaced</span>
+                              </div>
+                              
+                              {/* Reasons Grid */}
+                              <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-blue-600 font-semibold">Higher Studies</span>
+                                    <span className="bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded-full">Reason</span>
+                                  </div>
+                                  <div className="text-2xl font-bold text-gray-800">{analytics.unplacedReasons.higherStudies}</div>
+                                  <div className="w-full bg-blue-200 h-1.5 mt-3 rounded-full overflow-hidden">
+                                    <div 
+                                      className="bg-blue-500 h-full rounded-full" 
+                                      style={{ width: `${analytics.unplacedStudents ? ((analytics.unplacedReasons.higherStudies) / analytics.unplacedStudents * 100) : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-purple-50 p-4 rounded-xl border border-purple-100">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-purple-600 font-semibold">Exploring</span>
+                                    <span className="bg-purple-200 text-purple-800 text-xs px-2 py-1 rounded-full">Reason</span>
+                                  </div>
+                                  <div className="text-2xl font-bold text-gray-800">{analytics.unplacedReasons.exploring}</div>
+                                  <div className="w-full bg-purple-200 h-1.5 mt-3 rounded-full overflow-hidden">
+                                    <div 
+                                      className="bg-purple-500 h-full rounded-full" 
+                                      style={{ width: `${analytics.unplacedStudents ? ((analytics.unplacedReasons.exploring) / analytics.unplacedStudents * 100) : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                                
+                                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className="text-gray-600 font-semibold">Others</span>
+                                    <span className="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">Reason</span>
+                                  </div>
+                                  <div className="text-2xl font-bold text-gray-800">{analytics.unplacedReasons.others}</div>
+                                  <div className="w-full bg-gray-200 h-1.5 mt-3 rounded-full overflow-hidden">
+                                    <div 
+                                      className="bg-gray-500 h-full rounded-full" 
+                                      style={{ width: `${analytics.unplacedStudents ? ((analytics.unplacedReasons.others) / analytics.unplacedStudents * 100) : 0}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Card className="border-none shadow-lg rounded-xl overflow-hidden">
+                          <CardHeader className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 pb-4">
+                            <CardTitle className="text-xl font-bold text-gray-800">Students Placement Status</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-6 bg-white">
                             <ResponsiveContainer width="100%" height={300}>
                               <PieChart>
+                                <defs>
+                                  <linearGradient id="gradientPlaced" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#34D399" />
+                                    <stop offset="100%" stopColor="#059669" />
+                                  </linearGradient>
+                                  <linearGradient id="gradientUnplaced" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#F87171" />
+                                    <stop offset="100%" stopColor="#DC2626" />
+                                  </linearGradient>
+                                  <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2"/>
+                                  </filter>
+                                </defs>
                                 <Pie
                                   data={[
-                                    { name: 'Placed', value: analytics.placedStudents },
-                                    { name: 'Unplaced', value: analytics.unplacedStudents },
+                                    { name: 'Placed', value: Number(analyticsPercentages.placed_percentage) },
+                                    { name: 'Unplaced', value: Number(analyticsPercentages.unplaced_percentage) },
                                   ]}
                                   cx="50%"
                                   cy="50%"
                                   labelLine={true}
                                   label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`}
-                                  outerRadius={80}
-                                  fill="#8884d8"
+                                  outerRadius={100}
+                                  innerRadius={0}
                                   dataKey="value"
+                                  stroke="none"
+                                  style={{ filter: 'url(#shadow)' }}
                                 >
-                                  <Cell key={`cell-0`} fill="#10B981" />
-                                  <Cell key={`cell-1`} fill="#EF4444" />
+                                  <Cell key={`cell-0`} fill="url(#gradientPlaced)" />
+                                  <Cell key={`cell-1`} fill="url(#gradientUnplaced)" />
                                 </Pie>
-                                <Tooltip />
-                                <Legend />
+                                <Tooltip 
+                                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
                               </PieChart>
                             </ResponsiveContainer>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
-                          <CardHeader>
-                            <CardTitle>Jobs Overview</CardTitle>
+                        <Card className="border-none shadow-lg rounded-xl overflow-hidden">
+                          <CardHeader className="bg-gradient-to-r from-white to-gray-50 border-b border-gray-100 pb-4">
+                            <CardTitle className="text-xl font-bold text-gray-800">Jobs Overview</CardTitle>
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="p-6 bg-white">
                             <ResponsiveContainer width="100%" height={300}>
                               <PieChart>
+                                <defs>
+                                  <linearGradient id="gradientActive" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#60A5FA" />
+                                    <stop offset="100%" stopColor="#2563EB" />
+                                  </linearGradient>
+                                  <linearGradient id="gradientInactive" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#9CA3AF" />
+                                    <stop offset="100%" stopColor="#4B5563" />
+                                  </linearGradient>
+                                  <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feDropShadow dx="2" dy="2" stdDeviation="3" floodOpacity="0.2"/>
+                                  </filter>
+                                </defs>
                                 <Pie
                                   data={[
                                     { name: 'Active', value: analytics.activeJobs },
@@ -886,15 +1035,19 @@ export default function AdminDashboard() {
                                   cy="50%"
                                   labelLine={true}
                                   label={({ name, percent }) => `${name}: ${percent ? (percent * 100).toFixed(0) : '0'}%`}
-                                  outerRadius={80}
-                                  fill="#8884d8"
+                                  outerRadius={100}
+                                  innerRadius={0}
                                   dataKey="value"
+                                  stroke="none"
+                                  style={{ filter: 'url(#shadow2)' }}
                                 >
-                                  <Cell key={`cell-0`} fill="#3B82F6" />
-                                  <Cell key={`cell-1`} fill="#9CA3AF" />
+                                  <Cell key={`cell-0`} fill="url(#gradientActive)" />
+                                  <Cell key={`cell-1`} fill="url(#gradientInactive)" />
                                 </Pie>
-                                <Tooltip />
-                                <Legend />
+                                <Tooltip 
+                                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
                               </PieChart>
                             </ResponsiveContainer>
                           </CardContent>
@@ -904,31 +1057,79 @@ export default function AdminDashboard() {
                       <div className="grid grid-cols-1 gap-6">
                         <Card className="border-none shadow-md">
                           <CardHeader>
-                            <CardTitle>Year-wise Placement Percentage</CardTitle>
+                            <CardTitle>Placement Distribution</CardTitle>
                           </CardHeader>
-                          <CardContent>
-                            <ResponsiveContainer width="100%" height={300}>
-                              <LineChart
+                          <CardContent className="h-[350px] bg-gradient-to-b from-white to-slate-100 rounded-b-lg p-6">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
                                 data={[
-                                  { year: '2023', placement: 85 },
-                                  { year: '2024', placement: analytics.placementPercentage },
-                                  { year: '2025', placement: analytics.placementPercentage },
-                                  { year: '2026', placement: analytics.placementPercentage },
+                                  { name: 'Placed', percentage: analyticsPercentages.placed_percentage },
+                                  { name: 'Higher Studies', percentage: analyticsPercentages.higher_studies_percentage },
+                                  { name: 'Exploring Opportunities', percentage: analyticsPercentages.exploring_percentage },
+                                  { name: 'Others', percentage: analyticsPercentages.others_percentage },
                                 ]}
                                 margin={{
-                                  top: 5,
+                                  top: 20,
                                   right: 30,
                                   left: 20,
                                   bottom: 5,
                                 }}
                               >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="year" />
-                                <YAxis domain={[0, 100]} />
-                                <Tooltip />
-                                <Legend />
-                                <Line type="monotone" dataKey="placement" stroke="#10B981" activeDot={{ r: 8 }} />
-                              </LineChart>
+                                <defs>
+                                  <linearGradient id="colorPlaced" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#60A5FA" />
+                                    <stop offset="100%" stopColor="#1E40AF" />
+                                  </linearGradient>
+                                  <linearGradient id="colorHigher" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#FDBA74" />
+                                    <stop offset="100%" stopColor="#C2410C" />
+                                  </linearGradient>
+                                  <linearGradient id="colorExploring" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#FEF08A" />
+                                    <stop offset="100%" stopColor="#EAB308" />
+                                  </linearGradient>
+                                  <linearGradient id="colorOthers" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#5EEAD4" />
+                                    <stop offset="100%" stopColor="#0F766E" />
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" strokeOpacity={0.5} />
+                                <XAxis 
+                                  dataKey="name" 
+                                  tick={{ fill: '#4b5563', fontSize: 12 }} 
+                                  axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.5 }} 
+                                  tickLine={false} 
+                                />
+                                <YAxis 
+                                  domain={[0, 100]} 
+                                  tick={{ fill: '#4b5563', fontSize: 12 }} 
+                                  axisLine={false} 
+                                  tickLine={false} 
+                                />
+                                <Tooltip 
+                                  cursor={{ fill: 'transparent' }}
+                                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                  formatter={(value: any) => [`${Number(value).toFixed(1)}%`, 'Percentage']}
+                                />
+                                <Bar dataKey="percentage" radius={[8, 8, 0, 0]} barSize={60}>
+                                  {
+                                    [
+                                      { name: 'Placed' },
+                                      { name: 'Higher Studies' },
+                                      { name: 'Exploring Opportunities' },
+                                      { name: 'Others' },
+                                    ].map((entry, index) => {
+                                      let fillId = 'colorOthers';
+                                      if (entry.name === 'Placed') fillId = 'colorPlaced';
+                                      else if (entry.name === 'Higher Studies') fillId = 'colorHigher';
+                                      else if (entry.name.includes('Exploring')) fillId = 'colorExploring';
+                                      
+                                      return <Cell key={`cell-${index}`} fill={`url(#${fillId})`} />;
+                                    })
+                                  }
+                                  <LabelList dataKey="percentage" position="top" formatter={(value: any) => `${Number(value).toFixed(1)}%`} style={{ fill: '#374151', fontWeight: 'bold', fontSize: '12px' }} />
+                                </Bar>
+                              </BarChart>
                             </ResponsiveContainer>
                           </CardContent>
                         </Card>

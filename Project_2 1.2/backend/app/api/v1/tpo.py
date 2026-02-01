@@ -22,6 +22,8 @@ from app.schemas.job import JobCreate, JobResponse, JobUpdate, JobApplicationRes
 from app.schemas.event import EventCreate, EventResponse, EventUpdate
 
 from app.models.file import FileUpload
+from app.models.analytics import AnalyticsPercentages
+from app.schemas.analytics import AnalyticsPercentagesResponse
 
 router = APIRouter()
 
@@ -97,8 +99,36 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
     total_applications = db.query(JobApplication).count()
     total_students = db.query(User).filter(User.role == UserRole.STUDENT).count()
     
-    # Count placed students (those with placement_status='Placed')
-    total_placed = db.query(Profile).filter(Profile.placement_status == 'Placed').count()
+    # Count placed students (those with placement_status='Placed') - properly joined with students
+    total_placed = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Placed'
+    ).count()
+    
+    # Count unplaced students (those with placement_status='Not Placed') - properly joined with students
+    total_unplaced = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed'
+    ).count()
+    
+    # Count unplaced students by reason
+    unplaced_higher_studies = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Higher Studies'
+    ).count()
+    
+    unplaced_exploring = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Exploring'
+    ).count()
+    
+    unplaced_others = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Others'
+    ).count()
     
     # Calculate selected (hired) applications if applicable, or use placement count
     total_selected = total_placed 
@@ -109,6 +139,12 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "total_selected": total_selected,
         "total_students": total_students,
         "total_placed": total_placed,
+        "total_unplaced": total_unplaced,
+        "unplaced_reasons": {
+            "higherStudies": unplaced_higher_studies,
+            "exploring": unplaced_exploring,
+            "others": unplaced_others
+        },
         "applications_by_job": [] # Can be populated if needed
     }
 
@@ -154,11 +190,10 @@ def get_approved_students(db: Session = Depends(get_db)):
             FileUpload.is_verified == True
         ).first()
         
-        # Get offer letter info
+        # Get offer letter info (any offer letter, regardless of verification status)
         offer_letter = db.query(FileUpload).filter(
             FileUpload.user_id == u.id,
-            FileUpload.file_type == 'offer_letter',
-            FileUpload.is_verified == True
+            FileUpload.file_type == 'offer_letter'
         ).first()
         
         result.append({
@@ -546,6 +581,112 @@ def approve_profile(
         "is_approved": profile.is_approved,
         "approval_status": profile.approval_status
     }
+
+
+@router.post("/analytics-percentages/calculate")
+def calculate_and_store_analytics_percentages_for_tpo(db: Session = Depends(get_db)):
+    """Calculate analytics percentages using the given formulas and store them in the database"""
+    from app.models.notification import Notification
+    from app.models.event import EventRegistration
+    
+    # Get the counts needed for calculations
+    total_students = db.query(User).filter(User.role == UserRole.STUDENT).count()
+    
+    # Count placed students - properly joined with students
+    placed_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Placed'
+    ).count()
+    
+    # Count unplaced students - properly joined with students
+    unplaced_students = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed'
+    ).count()
+    
+    # Count unplaced students by reason
+    higher_studies_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Higher Studies'
+    ).count()
+    
+    exploring_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Exploring'
+    ).count()
+    
+    others_count = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Others'
+    ).count()
+    
+    # Calculate percentages using the provided formulas:
+    # 1. placedPercentage = (placedStudents / totalStudents) * 100
+    placed_percentage = (placed_students / total_students * 100) if total_students > 0 else 0
+    
+    # 2. unplacedPercentage = (unplacedStudents / totalStudents) * 100
+    unplaced_percentage = (unplaced_students / total_students * 100) if total_students > 0 else 0
+    
+    # 3. higherStudiesPercentage = (higherStudiesCount / unplacedStudents) * 100
+    higher_studies_percentage = (higher_studies_count / unplaced_students * 100) if unplaced_students > 0 else 0
+    
+    # 4. exploringPercentage = (exploringCount / unplacedStudents) * 100
+    exploring_percentage = (exploring_count / unplaced_students * 100) if unplaced_students > 0 else 0
+    
+    # 5. othersPercentage = (othersCount / unplacedStudents) * 100
+    others_percentage = (others_count / unplaced_students * 100) if unplaced_students > 0 else 0
+    
+    # Calculate placement rate percentage - same as placed percentage
+    placement_rate_percentage = placed_percentage
+    
+    # Create or update the analytics percentages record
+    # First, check if a record already exists
+    existing_record = db.query(AnalyticsPercentages).order_by(AnalyticsPercentages.id.desc()).first()
+    
+    if existing_record:
+        # Update the existing record
+        existing_record.placed_percentage = placed_percentage
+        existing_record.unplaced_percentage = unplaced_percentage
+        existing_record.higher_studies_percentage = higher_studies_percentage
+        existing_record.exploring_percentage = exploring_percentage
+        existing_record.others_percentage = others_percentage
+        existing_record.placement_rate_percentage = placement_rate_percentage
+        existing_record.total_students = total_students
+        existing_record.placed_students = placed_students
+        existing_record.unplaced_students = unplaced_students
+        existing_record.higher_studies_count = higher_studies_count
+        existing_record.exploring_count = exploring_count
+        existing_record.others_count = others_count
+        
+        db.commit()
+        db.refresh(existing_record)
+        
+        return AnalyticsPercentagesResponse.from_orm(existing_record)
+    else:
+        # Create a new record
+        analytics_percentages = AnalyticsPercentages(
+            placed_percentage=placed_percentage,
+            unplaced_percentage=unplaced_percentage,
+            higher_studies_percentage=higher_studies_percentage,
+            exploring_percentage=exploring_percentage,
+            others_percentage=others_percentage,
+            placement_rate_percentage=placement_rate_percentage,
+            total_students=total_students,
+            placed_students=placed_students,
+            unplaced_students=unplaced_students,
+            higher_studies_count=higher_studies_count,
+            exploring_count=exploring_count,
+            others_count=others_count
+        )
+        
+        db.add(analytics_percentages)
+        db.commit()
+        db.refresh(analytics_percentages)
+        
+        return AnalyticsPercentagesResponse.from_orm(analytics_percentages)
 
 
 @router.put("/profiles/{user_id}/reject")

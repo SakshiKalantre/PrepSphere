@@ -1,6 +1,15 @@
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
+from enum import Enum
+
+class ApplicationStatus(str, Enum):
+    PENDING = "PENDING"
+    REVIEWED = "REVIEWED"
+    SHORTLISTED = "SHORTLISTED"
+    ACCEPTED = "ACCEPTED"
+    REJECTED = "REJECTED"
+    WITHDRAWN = "WITHDRAWN"
 
 class JobBase(BaseModel):
     title: str

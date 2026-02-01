@@ -73,8 +73,8 @@ def handle_user_created(data: Dict[str, Any], db: Session):
     # Extract user information
     clerk_user_id = user_data.get("id")
     email_addresses = user_data.get("email_addresses", [])
-    first_name = user_data.get("first_name", "")
-    last_name = user_data.get("last_name", "")
+    first_name = user_data.get("first_name", "") or ""
+    last_name = user_data.get("last_name", "") or ""
     
     # Get email (primary email if multiple)
     email = ""
@@ -124,8 +124,8 @@ def handle_user_updated(data: Dict[str, Any], db: Session):
         primary_email = next((email for email in email_addresses if email.get("id") == user_data.get("primary_email_address_id")), email_addresses[0])
         db_user.email = primary_email.get("email_address", "")
     
-    db_user.first_name = user_data.get("first_name", db_user.first_name)
-    db_user.last_name = user_data.get("last_name", db_user.last_name)
+    db_user.first_name = user_data.get("first_name", db_user.first_name) or ""
+    db_user.last_name = user_data.get("last_name", db_user.last_name) or ""
     
     db.commit()
     db.refresh(db_user)

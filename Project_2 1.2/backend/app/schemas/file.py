@@ -23,6 +23,33 @@ class ResumeResponse(ResumeBase):
     class Config:
         from_attributes = True
 
+
+class FileUploadBase(BaseModel):
+    user_id: int
+    file_name: str
+    file_path: str
+    file_size: int
+    mime_type: str
+    file_type: str
+    file_url: str
+
+
+class FileUploadCreate(FileUploadBase):
+    pass
+
+
+class FileUploadResponse(FileUploadBase):
+    id: int
+    is_verified: bool
+    verification_notes: Optional[str] = None
+    uploaded_at: datetime
+    verified_at: Optional[datetime] = None
+    status: str
+    content_base64: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
 class CertificateBase(BaseModel):
     user_id: int
     file_name: str

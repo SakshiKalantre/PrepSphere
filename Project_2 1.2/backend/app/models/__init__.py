@@ -7,6 +7,7 @@ from app.models.event import Event, EventRegistration
 from app.models.file import FileUpload
 from app.models.notification import Notification, NotificationType
 from app.models.contact_message import ContactMessage
+from app.models.analytics import AnalyticsPercentages
 
 __all__ = [
     "User",
@@ -23,4 +24,5 @@ __all__ = [
     "Notification",
     "NotificationType",
     "ContactMessage",
+    "AnalyticsPercentages",
 ]
