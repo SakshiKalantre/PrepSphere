@@ -20,6 +20,7 @@ class JobBase(BaseModel):
     salary_range: Optional[str] = None
     job_url: Optional[str] = None
     total_positions: Optional[int] = 1
+    job_type: Optional[str] = None
 
 class JobCreate(JobBase):
     application_deadline: Optional[datetime] = None

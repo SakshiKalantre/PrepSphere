@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+from enum import Enum
+from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.models.notification import Notification
-from app.models.user import User
+from app.models.user import User, UserRole, Profile
 from app.schemas.notification import NotificationCreate, NotificationResponse, NotificationUpdate
 
 router = APIRouter()
@@ -69,14 +71,11 @@ def delete_notification(notification_id: int, db: Session = Depends(get_db)):
     return {"message": "Notification deleted successfully"}
 
 
-from pydantic import BaseModel
-
-
 class NotificationSendRequest(BaseModel):
     student_email: str
     message: str
     title: str = "Message from TPO"
-    sent_by: int = None
+    sent_by: Optional[int] = None
 
 
 @router.post("/send")
@@ -103,3 +102,66 @@ def send_notification(
     db.refresh(notification)
     
     return {"success": True, "message": "Notification sent successfully"}
+
+
+class RecipientGroup(str, Enum):
+    ALL_TPOS = "ALL_TPOS"
+    ALL_STUDENTS = "ALL_STUDENTS"
+    PLACED_STUDENTS = "PLACED_STUDENTS"
+    UNPLACED_STUDENTS = "UNPLACED_STUDENTS"
+
+class NotificationBulkSendRequest(BaseModel):
+    recipient_group: RecipientGroup
+    message: str
+    title: str = "Message from Admin"
+    sent_by: Optional[int] = None
+
+@router.post("/send-bulk")
+def send_bulk_notification(
+    request: NotificationBulkSendRequest,
+    db: Session = Depends(get_db)
+):
+    users_to_notify = []
+    
+    if request.recipient_group == RecipientGroup.ALL_TPOS:
+        users_to_notify = db.query(User).filter(User.role == UserRole.TPO).all()
+        
+    elif request.recipient_group == RecipientGroup.ALL_STUDENTS:
+        users_to_notify = db.query(User).filter(User.role == UserRole.STUDENT).all()
+        
+    elif request.recipient_group == RecipientGroup.PLACED_STUDENTS:
+        users_to_notify = db.query(User).join(Profile).filter(
+            User.role == UserRole.STUDENT, 
+            Profile.placement_status == 'Placed'
+        ).all()
+        
+    elif request.recipient_group == RecipientGroup.UNPLACED_STUDENTS:
+        # Include 'Not Placed' and any nulls or other statuses that are not 'Placed'
+        users_to_notify = db.query(User).join(Profile).filter(
+            User.role == UserRole.STUDENT, 
+            (Profile.placement_status != 'Placed') | (Profile.placement_status == None)
+        ).all()
+    
+    if not users_to_notify:
+        return {"success": True, "message": "No users found for the selected group", "count": 0}
+    
+    # Ensure title has Admin prefix to distinguish from TPO messages
+    final_title = request.title
+    if not final_title.startswith("Admin:"):
+        final_title = f"Admin: {final_title}"
+    
+    count = 0
+    for user in users_to_notify:
+        notification = Notification(
+            user_id=user.id,
+            title=final_title,
+            message=request.message,
+            sent_by=request.sent_by,
+            notification_type="SYSTEM"
+        )
+        db.add(notification)
+        count += 1
+    
+    db.commit()
+    
+    return {"success": True, "message": f"Notification sent to {count} users", "count": count}

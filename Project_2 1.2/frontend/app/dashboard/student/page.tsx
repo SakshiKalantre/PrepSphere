@@ -17,7 +17,8 @@ import {
   Bell, 
   Edit,
   Save,
-  X
+  X,
+  Clock
 } from 'lucide-react'
 import ResumeScorer from '@/components/ai-tools/ResumeScorer'
 import MockInterview from '@/components/ai-tools/MockInterview'
@@ -57,7 +58,7 @@ export default function StudentDashboard() {
     has_uploaded_documents: false
   })
   const [jobListings, setJobListings] = useState<Array<{id: number, title: string, company: string, location: string, job_type?: string, type?: string, posted?: string, deadline?: string, salary?: string, description?: string, requirements?: string, job_url?: string, total_positions?: number}>>([])
-  const [events, setEvents] = useState<Array<{id: number, title: string, location: string, status?: string, date?: string, time?: string, category?: string, description?: string, form_url?: string, created_at?: string, event_type?: string, capacity?: number, is_online?: boolean, meeting_link?: string, registered_count?: number}>>([])
+  const [events, setEvents] = useState<Array<{id: number, title: string, location: string, status?: string, event_date?: string, event_time?: string, category?: string, description?: string, form_url?: string, created_at?: string, event_type?: string, capacity?: number, is_online?: boolean, meeting_link?: string, registered_count?: number}>>([])
   const [notifications, setNotifications] = useState<Array<{id: number, title: string, message: string, time: string, read: boolean, sent_by?: number}>>([])
   const [appliedJobIds, setAppliedJobIds] = useState<Set<number>>(new Set())
 
@@ -1092,18 +1093,18 @@ export default function StudentDashboard() {
                           </div>
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="font-medium text-gray-800 mb-2">Job Type</p>
-                              <p className="text-gray-700">{job.job_type || job.type || '—'}</p>
+                              <p className="font-medium text-gray-800 mb-2">Location</p>
+                              <p className="text-gray-700">{job.location || '—'}</p>
                             </div>
                             <div>
                               <p className="font-medium text-gray-800 mb-2">Application Deadline</p>
-                              <p className="text-gray-700">{job.deadline ? new Date(job.deadline).toLocaleDateString() : '—'}</p>
+                              <p className="text-gray-700">{job.application_deadline ? new Date(job.application_deadline).toLocaleDateString() : '—'}</p>
                             </div>
                           </div>
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <p className="font-medium text-gray-800 mb-2">Salary Range</p>
-                              <p className="text-gray-700">{job.salary || '—'}</p>
+                              <p className="text-gray-700">{job.salary_range || job.salary || '—'}</p>
                             </div>
                             <div>
                               <p className="font-medium text-gray-800 mb-2">Number of Openings</p>
@@ -1227,11 +1228,11 @@ export default function StudentDashboard() {
                         <div className="mt-4 flex flex-wrap gap-4">
                           <div className="flex items-center text-gray-600">
                             <Calendar className="mr-2 h-4 w-4" />
-                            <span>{event.date}</span>
+                            <span>{event.event_date ? new Date(event.event_date).toLocaleDateString() : '—'}</span>
                           </div>
                           <div className="flex items-center text-gray-600">
-                            <Calendar className="mr-2 h-4 w-4" />
-                            <span>{event.time}</span>
+                            <Clock className="mr-2 h-4 w-4" />
+                            <span>{event.event_time || '—'}</span>
                           </div>
                           {event.category && (
                             <div className="flex items-center text-gray-600">
@@ -1372,7 +1373,11 @@ export default function StudentDashboard() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h3 className="text-lg font-semibold">{notification.title}</h3>
-                              {notification.sent_by && (
+                              {notification.title.startsWith('Admin:') ? (
+                                <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">
+                                  From Admin
+                                </Badge>
+                              ) : notification.sent_by && (
                                 <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
                                   From TPO
                                 </Badge>

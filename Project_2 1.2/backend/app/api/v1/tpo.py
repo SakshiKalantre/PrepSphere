@@ -27,63 +27,6 @@ from app.schemas.analytics import AnalyticsPercentagesResponse
 
 router = APIRouter()
 
-# --- TPO Event Management ---
-
-@router.post("/events", response_model=EventCreate)
-def create_tpo_event(event: EventCreate, db: Session = Depends(get_db)):
-    db_event = Event(**event.dict())
-    db.add(db_event)
-    db.commit()
-    db.refresh(db_event)
-    return db_event
-
-@router.get("/events/{event_id}/registrations")
-def get_tpo_event_registrations(event_id: int, db: Session = Depends(get_db)):
-    # Get registrations with user details
-    results = db.query(EventRegistration, User).join(User, EventRegistration.user_id == User.id).filter(
-        EventRegistration.event_id == event_id
-    ).all()
-    
-    response = []
-    for reg, user in results:
-        response.append({
-            "id": reg.id,
-            "user_id": user.id,
-            "name": f"{user.first_name} {user.last_name}",
-            "email": user.email,
-            "status": reg.registration_status,
-            "registered_at": reg.registered_at
-        })
-    return response
-
-@router.get("/jobs/{job_id}/applications")
-def get_tpo_job_applications(job_id: int, db: Session = Depends(get_db)):
-    # Get applications with user details
-    results = db.query(JobApplication, User).join(User, JobApplication.user_id == User.id).filter(
-        JobApplication.job_id == job_id
-    ).all()
-    
-    response = []
-    for app, user in results:
-        response.append({
-            "id": app.id,
-            "user_id": user.id,
-            "name": f"{user.first_name} {user.last_name}",
-            "email": user.email,
-            "status": app.status,
-            "applied_at": app.applied_at,
-            "resume_id": app.resume_id
-        })
-    return response
-
-@router.post("/jobs", response_model=JobResponse)
-def create_tpo_job(job: JobCreate, db: Session = Depends(get_db)):
-    db_job = Job(**job.dict())
-    db.add(db_job)
-    db.commit()
-    db.refresh(db_job)
-    return db_job
-
 # --- TPO Profile & Dashboard Stats ---
 
 @router.get("/{user_id}/profile")

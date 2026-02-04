@@ -2,6 +2,7 @@
 
 import { useUser, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 
 // Import Recharts components
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell } from 'recharts';
+import { Building2 } from 'lucide-react'
 
 export default function HomePage() {
   const { isSignedIn, user } = useUser()
@@ -19,10 +21,13 @@ export default function HomePage() {
   // State to track visibility of hidden sections (Selections count, Real-time insights)
   const [showHiddenInsights, setShowHiddenInsights] = useState(false)
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
-  
   // State for contact form
   const [contactForm, setContactForm] = useState({
     name: '',
+    company_name: '',
+    designation: '',
+    official_website: '',
+    phone_number: '',
     email: '',
     message: ''
   });
@@ -54,7 +59,15 @@ export default function HomePage() {
       
       if (response.ok) {
         alert('Thank you for your message! We will get back to you soon.');
-        setContactForm({ name: '', email: '', message: '' }); // Reset form
+        setContactForm({
+          name: '',
+          company_name: '',
+          designation: '',
+          official_website: '',
+          phone_number: '',
+          email: '',
+          message: ''
+        }); // Reset form
       } else {
         alert('Failed to send message. Please try again.');
       }
@@ -92,28 +105,28 @@ export default function HomePage() {
         if (resDistribution.ok) {
           const data = await resDistribution.json();
           setPlacementDistribution([
-            { name: 'Placed', percentage: data.placed_percentage },
-            { name: 'Higher Studies', percentage: data.higher_studies_percentage },
-            { name: 'Exploring Opportunities', percentage: data.exploring_percentage },
-            { name: 'Others', percentage: data.others_percentage },
+            { name: 'Placed', count: data.placed_students, percentage: data.placed_percentage },
+            { name: 'Higher Studies', count: data.higher_studies_count, percentage: data.higher_studies_percentage },
+            { name: 'Exploring Opportunities', count: data.exploring_count, percentage: data.exploring_percentage },
+            { name: 'Others', count: data.others_count, percentage: data.others_percentage },
           ]);
         } else {
           // Fallback data
           setPlacementDistribution([
-            { name: 'Placed', percentage: 0 },
-            { name: 'Higher Studies', percentage: 0 },
-            { name: 'Exploring Opportunities', percentage: 0 },
-            { name: 'Others', percentage: 0 },
+            { name: 'Placed', count: 0, percentage: 0 },
+            { name: 'Higher Studies', count: 0, percentage: 0 },
+            { name: 'Exploring Opportunities', count: 0, percentage: 0 },
+            { name: 'Others', count: 0, percentage: 0 },
           ]);
         }
       } catch (error) {
         console.error('Failed to fetch stats:', error)
         // Set fallback data in case of error
         setPlacementDistribution([
-          { name: 'Placed', percentage: 0 },
-          { name: 'Higher Studies', percentage: 0 },
-          { name: 'Exploring Opportunities', percentage: 0 },
-          { name: 'Others', percentage: 0 },
+          { name: 'Placed', count: 0, percentage: 0 },
+          { name: 'Higher Studies', count: 0, percentage: 0 },
+          { name: 'Exploring Opportunities', count: 0, percentage: 0 },
+          { name: 'Others', count: 0, percentage: 0 },
         ]);
       }
     }
@@ -121,14 +134,34 @@ export default function HomePage() {
   }, [])
 
 
+  const recruiters = [
+    { name: 'TCS', industry: 'IT Services' },
+    { name: 'Infosys', industry: 'IT Services' },
+    { name: 'Wipro', industry: 'IT Services' },
+    { name: 'Cognizant', industry: 'IT Services' },
+    { name: 'Accenture', industry: 'Consulting' },
+    { name: 'Deloitte', industry: 'Consulting' },
+    { name: 'HDFC Bank', industry: 'Banking' },
+    { name: 'ICICI Bank', industry: 'Banking' },
+    { name: 'Amazon', industry: 'Technology' },
+    { name: 'Microsoft', industry: 'Technology' },
+    { name: 'Google', industry: 'Technology' },
+    { name: 'JPMorgan', industry: 'Banking' },
+  ];
+
   return (
     <div className="min-h-screen bg-cream">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="bg-maroon w-12 h-12 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">SPND</span>
+            <div className="relative w-12 h-12 rounded-full overflow-hidden bg-white flex items-center justify-center border border-maroon">
+              <Image 
+                src="/images/logos/spnd-logo.png" 
+                alt="SPND College Logo" 
+                fill
+                className="object-contain p-0.5"
+              />
             </div>
             <span className="text-2xl font-bold text-maroon">PrepSphere</span>
           </Link>
@@ -166,7 +199,7 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="py-20 bg-gradient-to-r from-maroon to-maroon/80 text-white">
+      <section className="py-20 bg-maroon text-white">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-5xl md:text-6xl font-bold mb-6">Smt. P.N. Doshi Women's College</h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
@@ -188,7 +221,7 @@ export default function HomePage() {
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-20 bg-white">
+      <section id="about" className="py-32 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-maroon mb-4">About Our Placement Cell</h2>
@@ -225,10 +258,14 @@ export default function HomePage() {
                 </li>
               </ul>
             </div>
-            <div className="bg-gradient-to-r from-maroon to-gold rounded-xl w-full h-96 flex items-center justify-center shadow-lg">
-              <div className="text-center px-4">
-                <h3 className="text-white text-3xl font-bold mb-2">Smt. P.N. Doshi Women's College</h3>
-                <p className="text-white text-xl opacity-90">Empowering Women Through Education</p>
+            <div 
+              className="rounded-xl w-full h-96 flex items-center justify-center shadow-xl ring-1 ring-cream/40 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-[url('/images/college-building.jpg')] bg-cover bg-center filter saturate-150 brightness-110 contrast-105"></div>
+              <div className="absolute inset-0 bg-gradient-to-b from-sky-300/60 via-sky-200/40 to-transparent z-0"></div>
+              <div className="text-center px-4 relative z-10">
+                <h3 className="text-maroon text-3xl font-bold mb-2 drop-shadow-sm">Smt. P.N. Doshi Women's College</h3>
+                <p className="text-gray-800 text-xl">Empowering Women Through Education</p>
               </div>
             </div>
           </div>
@@ -236,7 +273,7 @@ export default function HomePage() {
       </section>
 
       {/* Placement Insights Section */}
-      <section className="py-20 bg-white">
+      <section className="py-32 bg-white">
         <div className="container mx-auto px-4">
             <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold text-maroon mb-4">Placement Insights</h2>
@@ -246,10 +283,12 @@ export default function HomePage() {
                 </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-12">
-                <div className="bg-cream p-8 rounded-xl shadow-md">
-                    <h3 className="text-2xl font-bold text-maroon mb-6">Placement Distribution</h3>
-                    <div className="h-80">
+            <div className="grid md:grid-cols-2 gap-12 items-stretch">
+                <div className="bg-cream p-8 rounded-xl shadow-md flex flex-col">
+                    <h3 className="text-2xl font-bold text-maroon mb-6">
+                        Placement Distribution <span className="text-lg font-normal text-gray-600 ml-2">(Total Strength: {stats?.total_students || 0})</span>
+                    </h3>
+                    <div className="h-80 flex-grow">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart
                                 data={placementDistribution}
@@ -280,24 +319,23 @@ export default function HomePage() {
                                     axisLine={{ stroke: '#9ca3af', strokeOpacity: 0.5 }} 
                                     tickLine={false} 
                                     interval={0}
-                                    angle={-15}
-                                    textAnchor="end"
+                                    angle={0}
+                                    textAnchor="middle"
                                     height={60}
                                     label={{ value: 'Placement Categories', position: 'insideBottom', offset: -5, fill: '#4b5563', fontSize: 12, fontWeight: 'bold' }}
                                 />
                                 <YAxis 
-                                    domain={[0, 100]} 
                                     tick={{ fill: '#4b5563', fontSize: 12 }} 
                                     axisLine={false} 
                                     tickLine={false} 
-                                    label={{ value: 'Percentage (%)', angle: -90, position: 'insideLeft', fill: '#4b5563', fontSize: 12, fontWeight: 'bold' }}
+                                    label={{ value: 'Number of Students', angle: -90, position: 'insideLeft', fill: '#4b5563', fontSize: 12, fontWeight: 'bold' }}
                                 />
                                 <Tooltip 
                                     cursor={{ fill: 'transparent' }}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                    formatter={(value: any) => [`${Number(value).toFixed(1)}%`, 'Percentage']}
+                                    formatter={(value: any, name: any, props: any) => [`${value} (${Number(props.payload.percentage).toFixed(1)}%)`, 'Students']}
                                 />
-                                <Bar dataKey="percentage" radius={[8, 8, 0, 0]} barSize={60}>
+                                <Bar dataKey="count" radius={[8, 8, 0, 0]} barSize={60}>
                                     {placementDistribution.map((entry, index) => {
                                         let fillId = 'colorOthers';
                                         if (entry.name === 'Placed') fillId = 'colorPlaced';
@@ -307,10 +345,17 @@ export default function HomePage() {
                                         return <Cell key={`cell-${index}`} fill={`url(#${fillId})`} />;
                                     })}
                                     <LabelList 
-                                        dataKey="percentage" 
+                                        dataKey="count" 
                                         position="top" 
-                                        formatter={(value: any) => `${Number(value).toFixed(1)}%`} 
-                                        style={{ fill: '#374151', fontWeight: 'bold', fontSize: '12px' }} 
+                                        content={(props: any) => {
+                                            const { x, y, width, value, index } = props;
+                                            const percentage = placementDistribution[index].percentage;
+                                            return (
+                                                <text x={x + width / 2} y={y - 10} fill="#374151" textAnchor="middle" fontSize={12} fontWeight="bold">
+                                                    {value} ({Number(percentage).toFixed(1)}%)
+                                                </text>
+                                            );
+                                        }}
                                     />
                                 </Bar>
                             </BarChart>
@@ -318,67 +363,74 @@ export default function HomePage() {
                     </div>
                 </div>
 
-                <div className="bg-cream p-8 rounded-xl shadow-md flex flex-col justify-center">
+                <div className="bg-cream p-8 rounded-xl shadow-md flex flex-col">
                      <h3 className="text-2xl font-bold text-maroon mb-6">Key Highlights</h3>
-                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-white p-4 rounded-lg shadow text-center">
-                            <p className="text-3xl font-bold text-gold">{stats?.total_placed || 0}</p>
-                            <p className="text-gray-600 text-sm">Students Placed</p>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow text-center">
-                            <p className="text-3xl font-bold text-gold">{stats?.active_jobs || stats?.total_jobs || 0}</p>
-                            <p className="text-gray-600 text-sm">Active Jobs</p>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow text-center">
-                            <p className="text-3xl font-bold text-gold">{stats?.total_applications || 0}</p>
-                            <p className="text-gray-600 text-sm">Total Applications</p>
-                        </div>
-                        <div className="bg-white p-4 rounded-lg shadow text-center">
-                            <p className="text-3xl font-bold text-gold">{stats?.total_students && stats?.total_placed ? Math.round((stats.total_placed/stats.total_students)*100) : 0}%</p>
-                            <p className="text-gray-600 text-sm">Placement Rate</p>
-                        </div>
-                     </div>
+                     <div className="grid grid-cols-2 gap-6 flex-grow">
+                       <div className="shine-effect bg-white border border-gray-100 p-6 rounded-lg shadow-sm text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:bg-gradient-to-br hover:from-gold/20 hover:to-maroon/10 flex flex-col justify-center items-center h-full">
+                           <p className="text-4xl font-bold text-gold mb-2">{stats?.total_placed || 0}</p>
+                           <p className="text-gray-600 font-medium">Students Placed</p>
+                       </div>
+                       <div className="shine-effect bg-white border border-gray-100 p-6 rounded-lg shadow-sm text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:bg-gradient-to-br hover:from-gold/20 hover:to-maroon/10 flex flex-col justify-center items-center h-full">
+                           <p className="text-4xl font-bold text-gold mb-2">{stats?.active_jobs || stats?.total_jobs || 0}</p>
+                           <p className="text-gray-600 font-medium">Active Jobs</p>
+                       </div>
+                       <div className="shine-effect bg-white border border-gray-100 p-6 rounded-lg shadow-sm text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:bg-gradient-to-br hover:from-gold/20 hover:to-maroon/10 flex flex-col justify-center items-center h-full">
+                           <p className="text-4xl font-bold text-gold mb-2">{stats?.total_applications || 0}</p>
+                           <p className="text-gray-600 font-medium">Total Applications</p>
+                       </div>
+                       <div className="shine-effect bg-white border border-gray-100 p-6 rounded-lg shadow-sm text-center transition-all duration-300 transform hover:-translate-y-1 hover:shadow-lg hover:bg-gradient-to-br hover:from-gold/20 hover:to-maroon/10 flex flex-col justify-center items-center h-full">
+                           <p className="text-4xl font-bold text-gold mb-2">{stats?.total_students && stats?.total_placed ? Math.round((stats.total_placed/stats.total_students)*100) : 0}%</p>
+                           <p className="text-gray-600 font-medium">Placement Rate</p>
+                       </div>
+                    </div>
                 </div>
             </div>
         </div>
       </section>
 
       {/* Recruiters Section */}
-      <section id="recruiters" className="py-20 bg-cream">
+      <section id="recruiters" className="py-32 bg-maroon">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-maroon mb-4">Our Recruiters</h2>
+            <h2 className="text-4xl font-bold text-white mb-4">Our Recruiters</h2>
             <div className="w-24 h-1 bg-gold mx-auto"></div>
-            <p className="text-gray-600 mt-4 max-w-2xl mx-auto">
+            <p className="text-cream/90 mt-4 max-w-2xl mx-auto">
               Leading companies trust our graduates and regularly recruit from our institution
             </p>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-            {[
-              { name: 'TCS', logo: 'https://logo.clearbit.com/tcs.com' },
-              { name: 'Infosys', logo: 'https://logo.clearbit.com/infosys.com' },
-              { name: 'Wipro', logo: 'https://logo.clearbit.com/wipro.com' },
-              { name: 'Cognizant', logo: 'https://logo.clearbit.com/cognizant.com' },
-              { name: 'Accenture', logo: 'https://logo.clearbit.com/accenture.com' },
-              { name: 'Deloitte', logo: 'https://logo.clearbit.com/deloitte.com' },
-              { name: 'HDFC Bank', logo: 'https://logo.clearbit.com/hdfcbank.com' },
-              { name: 'ICICI Bank', logo: 'https://logo.clearbit.com/icicibank.com' }
-            ].map((company, index) => (
-              <Card key={index} className="border-none shadow-md hover:shadow-lg transition-shadow bg-white">
-                <CardContent className="p-6 flex items-center justify-center h-32">
-                  <img 
-                    src={company.logo} 
-                    alt={company.name}
-                    className="max-w-full max-h-16 object-contain"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&background=7A1F2A&color=fff&size=128`;
-                    }}
-                  />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {recruiters.slice(0, 8).map((company, index) => (
+              <Card 
+                key={index} 
+                className="bg-white text-maroon border border-white/70 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 transform hover:-translate-y-1 hover:scale-[1.02] hover:bg-cream"
+              >
+                <CardContent className="p-6 h-32 flex items-center">
+                  <div className="w-full flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gold/20 text-gold flex items-center justify-center shrink-0">
+                      <Building2 className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <div className="font-semibold text-lg">{company.name}</div>
+                      <div className="text-gray-600 text-sm">{company.industry}</div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             ))}
+          </div>
+
+          {/* Scrolling Marquee */}
+          <div className="mt-16 w-full overflow-hidden bg-maroon py-8 rounded-lg shadow-inner">
+            <div className="flex animate-marquee whitespace-nowrap items-center">
+              {[...recruiters, ...recruiters, ...recruiters].map((company, index) => (
+                <div key={index} className="mx-3 inline-block">
+                  <div className="bg-white/10 text-white px-6 py-3 rounded-xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all cursor-default min-w-[140px] text-center flex items-center justify-center hover:scale-105">
+                    <span className="font-medium">{company.name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -392,7 +444,7 @@ export default function HomePage() {
           </div>
           
           <div className="flex flex-wrap justify-center gap-8 mb-16">
-            <Card className="border-t-4 border-maroon shadow-lg w-full md:w-96">
+            <Card className="border-t-4 border-maroon shadow-lg w-full md:w-96 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-gold/20 hover:border-gold/50">
               <CardHeader>
                 <CardTitle className="text-3xl text-center text-maroon">
                   {stats ? `${Math.round((stats.total_placed / (stats.total_students || 1)) * 100)}%` : '95%'}
@@ -407,7 +459,7 @@ export default function HomePage() {
             </Card>
             
             {/* Hidden per user request: Selections Card. Controlled by showHiddenInsights state. */}
-            <Card className="border-t-4 border-gold shadow-lg w-full md:w-96" style={{ display: showHiddenInsights ? undefined : 'none' }}>
+            <Card className="border-t-4 border-gold shadow-lg w-full md:w-96 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-gold/20 hover:border-gold/50" style={{ display: showHiddenInsights ? undefined : 'none' }}>
               <CardHeader>
                 <CardTitle className="text-3xl text-center text-maroon">{stats ? stats.total_selected : '0'}+</CardTitle>
                 <CardDescription className="text-center">Selections</CardDescription>
@@ -419,7 +471,7 @@ export default function HomePage() {
               </CardContent>
             </Card>
             
-            <Card className="border-t-4 border-maroon shadow-lg w-full md:w-96">
+            <Card className="border-t-4 border-maroon shadow-lg w-full md:w-96 transition-all duration-200 transform hover:-translate-y-1 hover:shadow-xl hover:shadow-gold/20 hover:border-gold/50">
               <CardHeader>
                 <CardTitle className="text-3xl text-center text-maroon">{stats ? stats.total_jobs : '150+'}</CardTitle>
                 <CardDescription className="text-center">Job Opportunities</CardDescription>
@@ -546,7 +598,19 @@ export default function HomePage() {
                 <CardContent>
                   <form className="space-y-4" onSubmit={handleSubmit}>
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <label htmlFor="company_name" className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                      <input 
+                        type="text" 
+                        id="company_name" 
+                        name="company_name"
+                        value={contactForm.company_name}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                        placeholder="Company Name"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
                       <input 
                         type="text" 
                         id="name" 
@@ -554,12 +618,24 @@ export default function HomePage() {
                         value={contactForm.name}
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
-                        placeholder="Your name"
+                        placeholder="Contact Person Name"
                         required
                       />
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <label htmlFor="designation" className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                      <input 
+                        type="text" 
+                        id="designation" 
+                        name="designation"
+                        value={contactForm.designation}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                        placeholder="Your Designation"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Official Email</label>
                       <input 
                         type="email" 
                         id="email" 
@@ -567,8 +643,32 @@ export default function HomePage() {
                         value={contactForm.email}
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
-                        placeholder="your.email@example.com"
+                        placeholder="official.email@company.com"
                         required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="official_website" className="block text-sm font-medium text-gray-700 mb-1">Official Website</label>
+                      <input 
+                        type="url" 
+                        id="official_website" 
+                        name="official_website"
+                        value={contactForm.official_website}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                        placeholder="https://www.company.com"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="phone_number" className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                      <input 
+                        type="tel" 
+                        id="phone_number" 
+                        name="phone_number"
+                        value={contactForm.phone_number}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-maroon focus:border-maroon"
+                        placeholder="Phone Number"
                       />
                     </div>
                     <div>

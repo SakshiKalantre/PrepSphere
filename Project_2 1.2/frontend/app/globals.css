@@ -79,3 +79,53 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+@layer utilities {
+  .shine-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .shine-effect::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(212, 175, 55, 0.1) 30%,
+      rgba(245, 193, 108, 0.4) 50%,
+      rgba(212, 175, 55, 0.1) 70%,
+      transparent 100%
+    );
+    transform: skewX(-25deg);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+  }
+  
+  .shine-effect:hover::after {
+    animation: shine-sweep 0.75s ease-in-out forwards;
+    opacity: 1;
+  }
+  
+  @keyframes shine-sweep {
+    0% {
+      left: -100%;
+      opacity: 0;
+    }
+    10% {
+      opacity: 1;
+    }
+    90% {
+      opacity: 1;
+    }
+    100% {
+      left: 200%;
+      opacity: 0;
+    }
+  }
+}

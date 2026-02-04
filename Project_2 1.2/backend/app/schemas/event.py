@@ -10,6 +10,11 @@ class EventBase(BaseModel):
     event_time: str
     status: Optional[str] = "Upcoming"
     form_url: Optional[str] = None
+    event_type: Optional[str] = None
+    capacity: Optional[int] = None
+    is_online: Optional[bool] = False
+    meeting_link: Optional[str] = None
+    category: Optional[str] = None
 
 class EventCreate(EventBase):
     created_by: int
@@ -22,6 +27,12 @@ class EventUpdate(BaseModel):
     event_time: Optional[str] = None
     status: Optional[str] = None
     is_active: Optional[bool] = None
+    form_url: Optional[str] = None
+    event_type: Optional[str] = None
+    capacity: Optional[int] = None
+    is_online: Optional[bool] = None
+    meeting_link: Optional[str] = None
+    category: Optional[str] = None
 
 class EventResponse(EventBase):
     id: int
@@ -31,6 +42,11 @@ class EventResponse(EventBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     form_url: Optional[str] = None
+    event_type: Optional[str] = None
+    capacity: Optional[int] = None
+    is_online: Optional[bool] = False
+    meeting_link: Optional[str] = None
+    category: Optional[str] = None
     
     class Config:
         from_attributes = True

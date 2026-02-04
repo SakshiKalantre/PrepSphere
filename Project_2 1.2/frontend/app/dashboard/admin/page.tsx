@@ -37,6 +37,7 @@ export default function AdminDashboard() {
   const [isMessaging, setIsMessaging] = useState(false)
   const [analyticsView, setAnalyticsView] = useState('job') // 'job' or 'event'
   const [messageRecipient, setMessageRecipient] = useState<{ email: string, name: string } | null>(null)
+  const [messageRecipientGroup, setMessageRecipientGroup] = useState<'ALL_TPOS'|'ALL_STUDENTS'|'PLACED_STUDENTS'|'UNPLACED_STUDENTS'>('ALL_STUDENTS')
   const [messageTitle, setMessageTitle] = useState('')
   const [messageBody, setMessageBody] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -315,6 +316,16 @@ export default function AdminDashboard() {
                     >
                       <UserPlus className="mr-2 h-4 w-4" />
                       Add User
+                    </Button>
+                    <Button 
+                      className="bg-maroon hover:bg-maroon/90"
+                      onClick={() => {
+                        setMessageRecipient(null)
+                        setIsMessaging(true)
+                      }}
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      Send Notification
                     </Button>
                     <Button 
                       variant="outline"
@@ -1056,17 +1067,20 @@ export default function AdminDashboard() {
                       
                       <div className="grid grid-cols-1 gap-6">
                         <Card className="border-none shadow-md">
-                          <CardHeader>
+                          <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Placement Distribution</CardTitle>
+                            <div className="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
+                              Total Strength: <span className="text-maroon font-bold">{analytics.totalStudents}</span>
+                            </div>
                           </CardHeader>
                           <CardContent className="h-[350px] bg-gradient-to-b from-white to-slate-100 rounded-b-lg p-6">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart
                                 data={[
-                                  { name: 'Placed', percentage: analyticsPercentages.placed_percentage },
-                                  { name: 'Higher Studies', percentage: analyticsPercentages.higher_studies_percentage },
-                                  { name: 'Exploring Opportunities', percentage: analyticsPercentages.exploring_percentage },
-                                  { name: 'Others', percentage: analyticsPercentages.others_percentage },
+                                  { name: 'Placed', percentage: analyticsPercentages.placed_percentage, count: analytics.placedStudents },
+                                  { name: 'Higher Studies', percentage: analyticsPercentages.higher_studies_percentage, count: analytics.unplacedReasons.higherStudies },
+                                  { name: 'Exploring Opportunities', percentage: analyticsPercentages.exploring_percentage, count: analytics.unplacedReasons.exploring },
+                                  { name: 'Others', percentage: analyticsPercentages.others_percentage, count: analytics.unplacedReasons.others },
                                 ]}
                                 margin={{
                                   top: 20,
@@ -1109,7 +1123,13 @@ export default function AdminDashboard() {
                                 <Tooltip 
                                   cursor={{ fill: 'transparent' }}
                                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                  formatter={(value: any) => [`${Number(value).toFixed(1)}%`, 'Percentage']}
+                                  formatter={(value: any, name: any, props: any) => [
+                                    <span key="value" className="font-semibold">
+                                      {`${Number(value).toFixed(1)}% `}
+                                      <span className="text-gray-500 font-normal">({props.payload.count} students)</span>
+                                    </span>, 
+                                    'Percentage'
+                                  ]}
                                 />
                                 <Bar dataKey="percentage" radius={[8, 8, 0, 0]} barSize={60}>
                                   {
@@ -1127,7 +1147,30 @@ export default function AdminDashboard() {
                                       return <Cell key={`cell-${index}`} fill={`url(#${fillId})`} />;
                                     })
                                   }
-                                  <LabelList dataKey="percentage" position="top" formatter={(value: any) => `${Number(value).toFixed(1)}%`} style={{ fill: '#374151', fontWeight: 'bold', fontSize: '12px' }} />
+                                  <LabelList 
+                                    dataKey="percentage" 
+                                    position="top" 
+                                    content={(props: any) => {
+                                      const { x, y, width, value, index } = props;
+                                      const data = [
+                                        { count: analytics.placedStudents },
+                                        { count: analytics.unplacedReasons.higherStudies },
+                                        { count: analytics.unplacedReasons.exploring },
+                                        { count: analytics.unplacedReasons.others },
+                                      ];
+                                      const count = data[index]?.count || 0;
+                                      return (
+                                        <g>
+                                          <text x={x + width / 2} y={y - 20} fill="#374151" textAnchor="middle" fontSize="12" fontWeight="bold">
+                                            {Number(value).toFixed(1)}%
+                                          </text>
+                                          <text x={x + width / 2} y={y - 5} fill="#6B7280" textAnchor="middle" fontSize="10">
+                                            ({count})
+                                          </text>
+                                        </g>
+                                      );
+                                    }}
+                                  />
                                 </Bar>
                               </BarChart>
                             </ResponsiveContainer>
@@ -1244,19 +1287,64 @@ export default function AdminDashboard() {
                           className={`border-none shadow-md ${isNew ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''}`}
                         >
                           <CardContent className="p-6">
-                            <div className="flex justify-between items-start mb-2">
-                              <h3 className="font-semibold text-lg">{message.name}</h3>
+                            <div className="flex justify-between items-start mb-4">
+                              <div className="space-y-1">
+                                <div>
+                                  <span className="text-xs font-bold text-gray-500 uppercase">Contact Person:</span>
+                                  <span className="ml-2 font-semibold text-lg">{message.name}</span>
+                                </div>
+                                {message.designation && (
+                                  <div>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">Designation:</span>
+                                    <span className="ml-2 text-sm text-gray-700">{message.designation}</span>
+                                  </div>
+                                )}
+                                {message.company_name && (
+                                  <div>
+                                    <span className="text-xs font-bold text-gray-500 uppercase">Company:</span>
+                                    <span className="ml-2 text-sm font-semibold text-maroon">{message.company_name}</span>
+                                  </div>
+                                )}
+                              </div>
                               {isNew && (
                                 <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">New</span>
                               )}
                             </div>
-                            <p className="text-gray-600 text-sm mb-2">{message.email}</p>
-                            <p className="text-gray-500 text-sm mb-3">{new Date(message.created_at).toLocaleString()}</p>
-                            <p className="text-gray-800">{message.message}</p>
-                                  
-                            <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between">
-                              <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-800">
-                                New
+                            
+                            <div className="space-y-2 mb-4">
+                                <div>
+                                    <span className="text-xs font-bold text-gray-500 uppercase block">Official Email:</span>
+                                    <a href={`mailto:${message.email}`} className="text-blue-600 text-sm hover:underline block">{message.email}</a>
+                                </div>
+                                
+                                {message.phone_number && (
+                                    <div>
+                                        <span className="text-xs font-bold text-gray-500 uppercase block">Phone Number:</span>
+                                        <a href={`tel:${message.phone_number}`} className="text-gray-600 text-sm block hover:text-maroon">
+                                            {message.phone_number}
+                                        </a>
+                                    </div>
+                                )}
+                                
+                                {message.official_website && (
+                                    <div>
+                                        <span className="text-xs font-bold text-gray-500 uppercase block">Official Website:</span>
+                                        <a href={message.official_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline block truncate">
+                                            {message.official_website}
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase block mb-1">Message:</span>
+                                <p className="text-gray-800 text-sm whitespace-pre-wrap bg-gray-50 p-3 rounded-md">{message.message}</p>
+                            </div>
+
+                            <div className="mt-4 pt-2 border-t border-gray-100 flex justify-between items-center">
+                              <p className="text-gray-500 text-xs">{new Date(message.created_at).toLocaleString()}</p>
+                              <span className={`text-xs px-2 py-1 rounded ${isNew ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                                {isNew ? 'Unread' : 'Read'}
                               </span>
                             </div>
                           </CardContent>
@@ -1329,16 +1417,32 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-md w-full">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-maroon mb-4">Send Message</h3>
+              <h3 className="text-xl font-bold text-maroon mb-4">
+                {messageRecipient ? 'Send Message' : 'Send Bulk Notification'}
+              </h3>
               
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="messageRecipient">To</Label>
-                  <Input 
-                    id="messageRecipient" 
-                    readOnly 
-                    value={messageRecipient ? `${messageRecipient.name} (${messageRecipient.email})` : ''} 
-                  />
+                  {messageRecipient ? (
+                    <Input 
+                      id="messageRecipient" 
+                      readOnly 
+                      value={`${messageRecipient.name} (${messageRecipient.email})`} 
+                    />
+                  ) : (
+                    <select
+                      id="messageRecipientGroup"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-maroon focus:border-maroon"
+                      value={messageRecipientGroup}
+                      onChange={(e) => setMessageRecipientGroup(e.target.value as any)}
+                    >
+                      <option value="ALL_STUDENTS">All Students</option>
+                      <option value="ALL_TPOS">All TPOs</option>
+                      <option value="PLACED_STUDENTS">Placed Students</option>
+                      <option value="UNPLACED_STUDENTS">Unplaced Students</option>
+                    </select>
+                  )}
                 </div>
                 
                 <div>
@@ -1370,44 +1474,74 @@ export default function AdminDashboard() {
                     setMessageBody('');
                   }}>Cancel</Button>
                   <Button className="bg-maroon hover:bg-maroon/90" onClick={async () => {
-                    if (!messageRecipient || !messageTitle.trim() || !messageBody.trim()) {
-                      alert('Please fill in all fields');
+                    if (!messageTitle.trim() || !messageBody.trim()) {
+                      alert('Please fill in subject and message');
                       return;
                     }
-                    
-                    try {
-                      // First, find the user ID by email
-                      const usersRes = await fetch(`${API_BASE}/api/v1/admin/users`);
-                      const usersData = await usersRes.json();
-                      const recipientUser = usersData.find((user: any) => user.email === messageRecipient.email);
-                      
-                      if (!recipientUser) {
-                        alert('User not found');
-                        return;
+
+                    if (messageRecipient) {
+                      // Single User Logic
+                      try {
+                        // First, find the user ID by email
+                        const usersRes = await fetch(`${API_BASE}/api/v1/admin/users`);
+                        const usersData = await usersRes.json();
+                        // @ts-ignore
+                        const recipientUser = usersData.find((user: any) => user.email === messageRecipient.email);
+                        
+                        if (!recipientUser) {
+                          alert('User not found');
+                          return;
+                        }
+                        
+                        const res = await fetch(`${API_BASE}/api/v1/admin/send-notification`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            user_id: recipientUser.id,
+                            title: messageTitle,
+                            message: messageBody
+                          })
+                        });
+                        
+                        if (res.ok) {
+                          alert('Message sent successfully');
+                          setIsMessaging(false);
+                          setMessageRecipient(null);
+                          setMessageTitle('');
+                          setMessageBody('');
+                        } else {
+                          const error = await res.json().catch(() => ({}));
+                          alert(error.error || 'Failed to send message');
+                        }
+                      } catch (err) {
+                        alert('Failed to send message');
                       }
-                      
-                      const res = await fetch(`${API_BASE}/api/v1/admin/send-notification`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          user_id: recipientUser.id,
-                          title: messageTitle,
-                          message: messageBody
-                        })
-                      });
-                      
-                      if (res.ok) {
-                        alert('Message sent successfully');
-                        setIsMessaging(false);
-                        setMessageRecipient(null);
-                        setMessageTitle('');
-                        setMessageBody('');
-                      } else {
-                        const error = await res.json().catch(() => ({}));
-                        alert(error.error || 'Failed to send message');
+                    } else {
+                      // Bulk Logic
+                      try {
+                        const res = await fetch(`${API_BASE}/api/v1/notifications/send-bulk`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            recipient_group: messageRecipientGroup,
+                            title: messageTitle,
+                            message: messageBody
+                          })
+                        });
+
+                        const result = await res.json();
+                        if (res.ok && result.success) {
+                          alert(result.message || 'Notifications sent successfully');
+                          setIsMessaging(false);
+                          setMessageRecipient(null);
+                          setMessageTitle('');
+                          setMessageBody('');
+                        } else {
+                          alert(result.message || 'Failed to send notifications');
+                        }
+                      } catch (err) {
+                         alert('Failed to send notifications: ' + err);
                       }
-                    } catch (err) {
-                      alert('Failed to send message');
                     }
                   }}>Send</Button>
                 </div>

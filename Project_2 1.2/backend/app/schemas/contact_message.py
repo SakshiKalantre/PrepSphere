@@ -5,6 +5,10 @@ from datetime import datetime
 
 class ContactMessageBase(BaseModel):
     name: str
+    company_name: Optional[str] = None
+    designation: Optional[str] = None
+    official_website: Optional[str] = None
+    phone_number: Optional[str] = None
     email: str
     message: str
 

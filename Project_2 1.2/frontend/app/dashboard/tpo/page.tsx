@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import LogoutButton from '@/components/LogoutButton'
@@ -72,6 +72,7 @@ export default function TPODashboard() {
   const [notificationTitle, setNotificationTitle] = useState('')
   const [notificationMessage, setNotificationMessage] = useState('')
   const [notificationHistory, setNotificationHistory] = useState<Array<any>>([])
+  const [receivedNotifications, setReceivedNotifications] = useState<Array<any>>([])
   const [editingJobId, setEditingJobId] = useState<number | null>(null)
   const [editJobForm, setEditJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string; total_positions:number }>({ title:'', company:'', location:'', status:'Active', description:'', requirements:'', salary_range:'', deadline:'', job_url:'', total_positions: 1 })
   const [originalJobForm, setOriginalJobForm] = useState<{ title:string; company:string; location:string; status:string; description:string; requirements:string; salary_range:string; deadline:string; job_url:string; total_positions:number } | null>(null)
@@ -79,7 +80,7 @@ export default function TPODashboard() {
   const [applicants, setApplicants] = useState<Array<any>>([])
   const [tpoEvents, setTpoEvents] = useState<Array<any>>([])
   const [isCreatingEvent, setIsCreatingEvent] = useState(false)
-  const [eventForm, setEventForm] = useState({ title:'', description:'', location:'', date:'', time:'', form_url:'', category:'' })
+  const [eventForm, setEventForm] = useState({ title:'', description:'', location:'', date:'', time:'', form_url:'', category:'', event_type:'', capacity:'', is_online:false, meeting_link:'' })
   const [editingEventId, setEditingEventId] = useState<number | null>(null)
   const [editEventForm, setEditEventForm] = useState({ title:'', description:'', location:'', date:'', time:'', status:'Upcoming', event_type:'', capacity:'', is_online:false, meeting_link:'', form_url:'', category:'' })
   const [originalEventForm, setOriginalEventForm] = useState<{ title:string; description:string; location:string; date:string; time:string; status:string; event_type:string; capacity:string; is_online:boolean; meeting_link:string; form_url:string; category:string } | null>(null)
@@ -220,6 +221,15 @@ export default function TPODashboard() {
         if (u.ok) {
           const userData = await u.json()
           setTpoUserId(userData.id)
+          
+          // Fetch received notifications
+          try {
+            const rnotif = await fetch(`${API_BASE_DEFAULT}/api/v1/notifications/user/${userData.id}`)
+            if (rnotif.ok) {
+               setReceivedNotifications(await rnotif.json())
+            }
+          } catch {}
+
           // load tpo profile
           try {
             const prf = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/${userData.id}/profile`)
@@ -537,7 +547,11 @@ export default function TPODashboard() {
         location: eventForm.location || '', 
         event_time: (eventForm.time || '').trim(), 
         status: 'Upcoming', 
-        created_by: creator
+        created_by: creator,
+        event_type: eventForm.event_type || null,
+        capacity: eventForm.capacity ? parseInt(eventForm.capacity.toString()) : null,
+        is_online: Boolean(eventForm.is_online),
+        meeting_link: eventForm.meeting_link || null
       }
       
       // Add date if valid
@@ -569,7 +583,7 @@ export default function TPODashboard() {
         if (evs.ok) setTpoEvents(await evs.json())
       } catch {}
       setIsCreatingEvent(false)
-      setEventForm({ title:'', description:'', location:'', date:'', time:'', form_url:'', category:'' })
+      setEventForm({ title:'', description:'', location:'', date:'', time:'', form_url:'', category:'', event_type:'', capacity:'', is_online:false, meeting_link:'' })
     } catch (error) {
       console.error('Error creating event:', error);
       alert('Failed to create event')
@@ -689,7 +703,13 @@ export default function TPODashboard() {
 
   const postJob = async () => {
     try {
-      const payload = { ...jobForm, created_by: tpoUserId }
+      const payload = { 
+        ...jobForm, 
+        salary_range: jobForm.salary,
+        job_type: jobForm.type,
+        application_deadline: jobForm.deadline ? new Date(jobForm.deadline).toISOString() : null,
+        created_by: tpoUserId 
+      }
       const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/jobs`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       if (res.ok) {
         const row = await res.json()
@@ -2097,6 +2117,28 @@ export default function TPODashboard() {
                             <Input id="evTime" placeholder="e.g. 10:00 AM" value={eventForm.time} onChange={(e)=>setEventForm({...eventForm, time:e.target.value})} />
                           </div>
                         </div>
+                        <div className="space-y-4">
+                          <div>
+                            <Label htmlFor="evEventType">Event Type</Label>
+                            <Input id="evEventType" placeholder="e.g. Workshop, Seminar" value={eventForm.event_type} onChange={(e)=>setEventForm({...eventForm, event_type:e.target.value})} />
+                          </div>
+                          <div>
+                            <Label htmlFor="evCapacity">Capacity</Label>
+                            <Input id="evCapacity" type="number" placeholder="Max participants" value={eventForm.capacity} onChange={(e)=>setEventForm({...eventForm, capacity:e.target.value})} />
+                          </div>
+                        </div>
+                        <div className="space-y-4">
+                          <div className="flex items-center space-x-2 pt-8">
+                            <input type="checkbox" id="evIsOnline" checked={eventForm.is_online} onChange={(e)=>setEventForm({...eventForm, is_online:e.target.checked})} className="h-4 w-4" />
+                            <Label htmlFor="evIsOnline">Is Online Event?</Label>
+                          </div>
+                          {eventForm.is_online && (
+                            <div>
+                              <Label htmlFor="evMeetingLink">Meeting Link</Label>
+                              <Input id="evMeetingLink" placeholder="Zoom/Meet URL" value={eventForm.meeting_link} onChange={(e)=>setEventForm({...eventForm, meeting_link:e.target.value})} />
+                            </div>
+                          )}
+                        </div>
                         <div className="md:col-span-2">
                           <Label htmlFor="evDesc">Description</Label>
                           <Textarea id="evDesc" rows={3} value={eventForm.description} onChange={(e)=>setEventForm({...eventForm, description:e.target.value})} />
@@ -2205,7 +2247,18 @@ export default function TPODashboard() {
                                     />
                                     <Label htmlFor={`editEventIsOnline-${event.id}`}>Is Online Event?</Label>
                                   </div>
-
+                                  {editEventForm.is_online && (
+                                    <div>
+                                      <Label htmlFor={`editEventMeetingLink-${event.id}`}>Meeting Link</Label>
+                                      <Input
+                                        id={`editEventMeetingLink-${event.id}`}
+                                        className={`${originalEventForm && editEventForm.meeting_link !== originalEventForm.meeting_link ? 'ring-2 ring-maroon bg-cream' : ''}`}
+                                        value={editEventForm.meeting_link}
+                                        onChange={(e)=>setEditEventForm({...editEventForm, meeting_link:e.target.value})}
+                                        placeholder="Zoom/Meet URL"
+                                      />
+                                    </div>
+                                  )}
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div>
@@ -2273,7 +2326,7 @@ export default function TPODashboard() {
                         <div className="mt-4 flex flex-wrap gap-4">
                           <div className="flex items-center text-gray-600">
                             <Calendar className="mr-2 h-4 w-4" />
-                            <span>{event.date} at {event.time}</span>
+                            <span>{event.event_date ? new Date(event.event_date).toLocaleDateString() : '—'} at {event.event_time || '—'}</span>
                           </div>
                           <div className="flex items-center text-gray-600">
                             <Users className="mr-2 h-4 w-4" />
@@ -2307,13 +2360,13 @@ export default function TPODashboard() {
                                       const payload:any = { 
                                         title: editEventForm.title || null, 
                                         location: editEventForm.location || null, 
-                                        date: editEventForm.date || null, 
-                                        time: editEventForm.time || null, 
+                                        event_date: editEventForm.date ? `${editEventForm.date}T00:00:00` : null, 
+                                        event_time: editEventForm.time || null, 
                                         description: editEventForm.description || null, 
                                         status: editEventForm.status || null,
                                         event_type: editEventForm.event_type || null,
-                                        capacity: editEventForm.capacity ? parseInt(editEventForm.capacity) : null,
-                                        is_online: editEventForm.is_online || false,
+                                        capacity: editEventForm.capacity ? parseInt(editEventForm.capacity.toString()) : null,
+                                        is_online: Boolean(editEventForm.is_online),
                                         meeting_link: editEventForm.meeting_link || null,
                                         form_url: editEventForm.form_url || null,
                                         category: editEventForm.category || null
@@ -2337,7 +2390,26 @@ export default function TPODashboard() {
                                   </Button>
                                 </>
                               ) : (
-                                <Button variant="outline" onClick={()=>{ setEditingEventId(event.id); setEditEventForm({ title: event.title || '', description: event.description || '', location: event.location || '', date: event.date || '', time: event.time || '', status: event.status || 'Upcoming', event_type: event.event_type || '', capacity: event.capacity?.toString() || '', is_online: event.is_online || false, meeting_link: event.meeting_link || '', form_url: event.form_url || '', category: event.category || '' }); setOriginalEventForm({ title: event.title || '', description: event.description || '', location: event.location || '', date: event.date || '', time: event.time || '', status: event.status || 'Upcoming', event_type: event.event_type || '', capacity: event.capacity?.toString() || '', is_online: event.is_online || false, meeting_link: event.meeting_link || '', form_url: event.form_url || '', category: event.category || '' }) }}>Edit</Button>
+                                <Button variant="outline" onClick={()=>{ 
+                                  const dateStr = event.event_date ? (typeof event.event_date === 'string' ? event.event_date.split('T')[0] : new Date(event.event_date).toISOString().split('T')[0]) : '';
+                                  const formData = { 
+                                    title: event.title || '', 
+                                    description: event.description || '', 
+                                    location: event.location || '', 
+                                    date: dateStr, 
+                                    time: event.event_time || '', 
+                                    status: event.status || 'Upcoming', 
+                                    event_type: event.event_type || '', 
+                                    capacity: event.capacity?.toString() || '', 
+                                    is_online: event.is_online || false, 
+                                    meeting_link: event.meeting_link || '', 
+                                    form_url: event.form_url || '', 
+                                    category: event.category || '' 
+                                  };
+                                  setEditingEventId(event.id); 
+                                  setEditEventForm(formData); 
+                                  setOriginalEventForm(formData); 
+                                }}>Edit</Button>
                               )}
                               <Button variant="outline" onClick={async()=>{
                                 try {
@@ -2391,7 +2463,7 @@ export default function TPODashboard() {
             {activeTab === 'notifications' && (
               <div>
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold text-maroon">Send Notifications</h2>
+                  <h2 className="text-2xl font-bold text-maroon">Notifications Center</h2>
                   <div className="flex space-x-2">
                     <Input placeholder="Search recipients..." className="w-64" />
                     <Button className="bg-maroon hover:bg-maroon/90">
@@ -2482,6 +2554,37 @@ export default function TPODashboard() {
                   </Card>
                 </div>
                 
+                {/* Received Notifications (Admin Only) */}
+                <div className="mt-8">
+                  <h3 className="text-xl font-bold text-maroon mb-4">Inbox (Admin Messages)</h3>
+                  <Card className="border-none shadow-md">
+                    <CardContent className="p-0">
+                      {receivedNotifications.filter(n => n.title.startsWith('Admin:')).length === 0 ? (
+                          <div className="p-4 text-center text-gray-500">No new admin notifications</div>
+                      ) : (
+                          <div className="divide-y max-h-96 overflow-y-auto">
+                              {receivedNotifications
+                                .filter(notif => notif.title.startsWith('Admin:'))
+                                .map((notif) => (
+                                  <div key={notif.id} className={`p-4 hover:bg-gray-50 ${!notif.is_read ? 'bg-blue-50' : ''}`}>
+                                      <div className="flex justify-between items-start">
+                                          <div>
+                                              <div className="flex items-center gap-2">
+                                                  <h4 className="font-semibold">{notif.title}</h4>
+                                                  <Badge variant="secondary" className="bg-purple-100 text-purple-800 text-xs">From Admin</Badge>
+                                              </div>
+                                              <p className="text-sm text-gray-600 mt-1">{notif.message}</p>
+                                          </div>
+                                          <span className="text-xs text-gray-500">{new Date(notif.created_at).toLocaleString()}</span>
+                                      </div>
+                                  </div>
+                              ))}
+                          </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
                 {/* Contact Messages Section */}
                 <div className="mt-8">
                   <h3 className="text-xl font-bold text-maroon mb-4 flex items-center">
@@ -2494,52 +2597,116 @@ export default function TPODashboard() {
                         <div className="p-4 text-center text-gray-500">No contact messages received yet</div>
                       ) : (
                         <div className="divide-y max-h-96 overflow-y-auto">
-                          {contactMessages.slice(0, 10).map((msg: any, idx: number) => (
-                            <div key={msg.id || idx} className={`p-4 hover:bg-gray-50 ${!msg.is_read ? 'bg-blue-50' : ''}`}>
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <div className="flex items-center mb-1">
-                                    <h4 className="font-semibold">{msg.name}</h4>
-                                    {!msg.is_read && <Badge className="ml-2" variant="default">New</Badge>}
+                          {contactMessages.slice(0, 10).map((msg: any, idx: number, arr: any[]) => {
+                            const showDivider = idx > 0 && !arr[idx-1].is_read && msg.is_read;
+                            return (
+                              <Fragment key={msg.id || idx}>
+                                {showDivider && (
+                                  <div className="relative py-4 flex items-center justify-center bg-gray-50/30">
+                                    <div className="absolute inset-0 flex items-center">
+                                      <div className="w-full border-t border-maroon border-dashed opacity-30"></div>
+                                    </div>
+                                    <div className="relative bg-white px-3 py-1 text-xs font-bold text-maroon uppercase tracking-wider border border-maroon/20 rounded-full shadow-sm">
+                                      Previously Read
+                                    </div>
                                   </div>
-                                  <a href={`mailto:${msg.email}`} className="text-sm text-blue-600 hover:underline">{msg.email}</a>
-                                  <p className="mt-2 text-gray-800">{msg.message}</p>
-                                </div>
-                                <div className="text-right">
-                                  <span className="text-xs text-gray-500 block">{new Date(msg.created_at).toLocaleString()}</span>
-                                  {!msg.is_read && (
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm" 
-                                      className="mt-2 text-xs"
-                                      onClick={async () => {
-                                        try {
-                                          const response = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages/${msg.id}/read`, {
-                                            method: 'PUT',
-                                            headers: { 'Content-Type': 'application/json' },
-                                          });
-                                          if (response.ok) {
-                                            // Refresh the contact messages
-                                            const updatedResponse = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages`);
-                                            if (updatedResponse.ok) {
-                                              setContactMessages(await updatedResponse.json());
+                                )}
+                                <div className={`p-4 hover:bg-gray-50 border-b border-gray-100 ${!msg.is_read ? 'bg-blue-50' : ''}`}>
+                                  <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+                                    <div className="flex-1 space-y-3 w-full">
+                                      <div className="flex items-center justify-between md:justify-start">
+                                        <div className="flex items-center">
+                                          <span className="text-xs font-bold text-gray-500 uppercase mr-2">From:</span>
+                                          <h4 className="font-semibold text-lg">{msg.name}</h4>
+                                        </div>
+                                        {!msg.is_read && <Badge className="ml-2" variant="default">New</Badge>}
+                                      </div>
+                                      
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                                        {msg.designation && (
+                                          <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Designation:</span>
+                                            <span className="text-sm text-gray-700">{msg.designation}</span>
+                                          </div>
+                                        )}
+                                        
+                                        {msg.company_name && (
+                                          <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Company:</span>
+                                            <span className="text-sm font-semibold text-maroon">{msg.company_name}</span>
+                                          </div>
+                                        )}
+    
+                                        <div className="flex flex-col">
+                                          <span className="text-xs font-bold text-gray-500 uppercase">Email:</span>
+                                          <a href={`mailto:${msg.email}`} className="text-sm text-blue-600 hover:underline">{msg.email}</a>
+                                        </div>
+    
+                                        {msg.phone_number && (
+                                          <div className="flex flex-col">
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Phone:</span>
+                                            <a href={`tel:${msg.phone_number}`} className="text-gray-600 text-sm hover:text-maroon">
+                                                {msg.phone_number}
+                                            </a>
+                                          </div>
+                                        )}
+    
+                                        {msg.official_website && (
+                                          <div className="flex flex-col md:col-span-2">
+                                            <span className="text-xs font-bold text-gray-500 uppercase">Website:</span>
+                                            <a href={msg.official_website} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-sm hover:underline truncate max-w-xs">
+                                                {msg.official_website}
+                                            </a>
+                                          </div>
+                                        )}
+                                      </div>
+    
+                                      <div className="mt-2">
+                                          <span className="text-xs font-bold text-gray-500 uppercase block mb-1">Message:</span>
+                                          <p className="text-gray-800 text-sm whitespace-pre-wrap bg-white/50 p-2 rounded border border-gray-100">{msg.message}</p>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="text-right min-w-[120px]">
+                                      <span className="text-xs text-gray-500 block mb-2">
+                                        <span className="font-bold mr-1">Received:</span>
+                                        {new Date(msg.created_at).toLocaleDateString()}
+                                      </span>
+                                      {!msg.is_read && (
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm" 
+                                          className="w-full text-xs"
+                                          onClick={async () => {
+                                            try {
+                                              const response = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages/${msg.id}/read`, {
+                                                method: 'PUT',
+                                                headers: { 'Content-Type': 'application/json' },
+                                              });
+                                              if (response.ok) {
+                                                // Refresh the contact messages
+                                                const updatedResponse = await fetch(`${API_BASE_DEFAULT}/api/v1/contact/contact-messages`);
+                                                if (updatedResponse.ok) {
+                                                  setContactMessages(await updatedResponse.json());
+                                                }
+                                              } else {
+                                                alert('Failed to mark message as read');
+                                              }
+                                            } catch (error) {
+                                              console.error('Error marking message as read:', error);
+                                              alert('Error marking message as read');
                                             }
-                                          } else {
-                                            alert('Failed to mark message as read');
-                                          }
-                                        } catch (error) {
-                                          console.error('Error marking message as read:', error);
-                                          alert('Error marking message as read');
-                                        }
-                                      }}
-                                    >
-                                      Mark as Read
-                                    </Button>
-                                  )}
+                                          }}
+                                        >
+                                          Mark as Read
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          ))}
+                              </Fragment>
+                            );
+                          })}
                           {contactMessages.length > 10 && (
                             <div className="p-4 text-center text-gray-500 text-sm">
                               Showing 10 of {contactMessages.length} contact messages

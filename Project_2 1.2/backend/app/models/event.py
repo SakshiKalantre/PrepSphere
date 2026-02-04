@@ -20,6 +20,7 @@ class Event(Base):
     is_online = Column(Boolean, default=False)
     meeting_link = Column(String, nullable=True)  # For online events
     form_url = Column(String, nullable=True)  # URL for event registration form
+    category = Column(String, nullable=True)  # Event category (e.g., Workshop, Talk)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)  # TPO user ID
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
