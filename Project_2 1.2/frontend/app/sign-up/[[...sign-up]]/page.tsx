@@ -122,9 +122,8 @@ export default function SignUpPage() {
         throw new Error(msg || "Registration failed");
       }
       setRegistrationSuccess(true);
-      localStorage.setItem("pendingUser", JSON.stringify({ email: formData.email, role }));
-      setIsLoading(false);
-      router.push("/sign-in");
+      // Show verification message instead of redirecting immediately
+      // router.push("/sign-in"); 
     } catch (error: any) {
       console.error("SignUp error:", error);
       setIsLoading(false);
@@ -170,8 +169,37 @@ export default function SignUpPage() {
             </Button>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSignUp} className="space-y-4">
+          {registrationSuccess ? (
+            <div className="text-center py-8">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              </div>
+              <h2 className="text-xl font-bold text-maroon mb-2">Account Created!</h2>
+              <p className="text-gray-600 mb-6">
+                We've sent a verification email to <strong>{formData.email}</strong>.
+                <br />
+                Please check your inbox and click the link to verify your account.
+              </p>
+              <a 
+                href="https://mail.google.com/" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="inline-block bg-maroon text-white px-6 py-2 rounded-lg hover:bg-maroon/90 mb-4"
+              >
+                Open Gmail
+              </a>
+              <div className="mt-4">
+                <Link href="/sign-in">
+                  <Button variant="outline" className="text-maroon border-maroon hover:bg-cream">
+                    Proceed to Sign In
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleSignUp} className="space-y-4">
             {/* Role Selection */}
             <div>
               <label htmlFor="role" className="block text-sm font-medium text-maroon mb-2">
@@ -247,9 +275,6 @@ export default function SignUpPage() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-maroon focus:border-transparent bg-cream"
               />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-              <div className="mt-2 text-xs">
-                <a href="https://mail.google.com/" target="_blank" rel="noreferrer" className="text-maroon hover:underline">Verify on Gmail</a>
-              </div>
             </div>
 
             {/* Phone Number */}
@@ -328,10 +353,8 @@ export default function SignUpPage() {
             >
               {isLoading ? "Creating Account..." : "Sign Up"}
             </Button>
-            {registrationSuccess && (
-              <div className="p-3 mt-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">Account created. Verify your email in Gmail and sign in.</div>
-            )}
           </form>
+          )}
 
           {/* Footer Text */}
           <p className="text-center text-xs text-gray-600 mt-6">

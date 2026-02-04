@@ -204,13 +204,13 @@ def get_verified_resumes(db: Session = Depends(get_db)):
     return result
 
 class NotificationFilters(BaseModel):
-    degree: str
-    year: str
+    degree: Optional[str] = None
+    year: Optional[str] = None
 
 class NotificationBroadcast(BaseModel):
     title: str
     message: str
-    filters: NotificationFilters
+    filters: Optional[NotificationFilters] = None
 
 # --- Notifications ---
 
@@ -222,10 +222,11 @@ def broadcast_notification(
     # Join User and Profile to filter students
     query = db.query(User).join(Profile).filter(User.role == UserRole.STUDENT)
     
-    if payload.filters.degree:
-        query = query.filter(Profile.degree == payload.filters.degree)
-    if payload.filters.year:
-        query = query.filter(Profile.year == payload.filters.year)
+    if payload.filters:
+        if payload.filters.degree:
+            query = query.filter(Profile.degree == payload.filters.degree)
+        if payload.filters.year:
+            query = query.filter(Profile.year == payload.filters.year)
         
     students = query.all()
     count = 0

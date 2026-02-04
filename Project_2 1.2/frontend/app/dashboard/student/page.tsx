@@ -235,6 +235,21 @@ export default function StudentDashboard() {
     applyRole()
   }, [user])
 
+  const markAsRead = async (id: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/notifications/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_read: true })
+      })
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error)
+    }
+  }
+
   const handleSaveProfile = async () => {
     try {
       if (!userId) return
@@ -1359,7 +1374,6 @@ export default function StudentDashboard() {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-maroon">Notifications</h2>
-                  <Button variant="outline">Mark all as read</Button>
                 </div>
                 
                 <div className="space-y-4">
@@ -1385,12 +1399,22 @@ export default function StudentDashboard() {
                             </div>
                             <p className="text-gray-600 mt-1">{notification.message}</p>
                           </div>
-                          <div className="text-right ml-4">
-                            <p className="text-sm text-gray-500">{notification.time}</p>
+                          <div className="text-right ml-4 flex flex-col items-end">
+                            <p className="text-sm text-gray-500 mb-2">{notification.time}</p>
                             {!notification.read && (
-                              <Badge variant="secondary" className="mt-2 bg-maroon text-white">
-                                New
-                              </Badge>
+                              <div className="flex flex-col items-end gap-2">
+                                <Badge variant="secondary" className="bg-maroon text-white">
+                                  New
+                                </Badge>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="h-8 text-xs px-3"
+                                  onClick={() => markAsRead(notification.id)}
+                                >
+                                  Mark as read
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>

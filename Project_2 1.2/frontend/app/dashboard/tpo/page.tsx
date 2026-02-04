@@ -2464,13 +2464,6 @@ export default function TPODashboard() {
               <div>
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-maroon">Notifications Center</h2>
-                  <div className="flex space-x-2">
-                    <Input placeholder="Search recipients..." className="w-64" />
-                    <Button className="bg-maroon hover:bg-maroon/90">
-                      <Filter className="mr-2 h-4 w-4" />
-                      Filter
-                    </Button>
-                  </div>
                 </div>
                 
                 <Card className="border-none shadow-md">

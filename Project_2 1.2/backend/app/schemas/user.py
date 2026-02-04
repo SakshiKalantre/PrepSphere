@@ -27,6 +27,7 @@ class UserResponse(UserBase):
     id: int
     clerk_user_id: str
     is_active: bool
+    is_verified: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
     

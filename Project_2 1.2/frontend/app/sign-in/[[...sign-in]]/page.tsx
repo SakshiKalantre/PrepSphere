@@ -26,6 +26,8 @@ export default function SignInPage() {
   const [resetMessage, setResetMessage] = useState("");
   const [recaptchaToken, setRecaptchaToken] = useState("");
   const [recaptchaError, setRecaptchaError] = useState("");
+  const [verificationNeeded, setVerificationNeeded] = useState(false);
+  const [resendStatus, setResendStatus] = useState("");
 
   useEffect(() => {
     // Check if already signed in locally
@@ -64,6 +66,40 @@ export default function SignInPage() {
   const onRecaptchaChange = (token: string) => {
     setRecaptchaToken(token);
     setRecaptchaError("");
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      setResendStatus("sending");
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const res = await fetch(`${API_BASE}/api/v1/users/resend-verification`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setResendStatus("sent");
+        setErrors({ submit: "Verification email sent! Please check your inbox." });
+      } else {
+        setResendStatus("error");
+        let errorMessage = "Failed to send verification email.";
+        if (data.detail) {
+            if (typeof data.detail === 'string') {
+                errorMessage = data.detail;
+            } else if (Array.isArray(data.detail)) {
+                 errorMessage = data.detail.map((e: any) => e.msg).join(', ');
+            } else {
+                 errorMessage = JSON.stringify(data.detail);
+            }
+        }
+        setErrors({ submit: errorMessage });
+      }
+    } catch (err) {
+      setResendStatus("error");
+      setErrors({ submit: "An error occurred. Please try again." });
+    }
   };
 
   const validateSignIn = () => {
@@ -105,7 +141,24 @@ export default function SignInPage() {
       });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        setErrors({ submit: errorData.detail || "Invalid email or password. Please try again." });
+        
+        let errorMessage = "Invalid email or password. Please try again.";
+        if (errorData.detail) {
+            if (typeof errorData.detail === 'string') {
+                errorMessage = errorData.detail;
+            } else if (Array.isArray(errorData.detail)) {
+                 errorMessage = errorData.detail.map((e: any) => e.msg).join(', ');
+            } else {
+                 errorMessage = JSON.stringify(errorData.detail);
+            }
+        }
+
+        if (res.status === 403 && errorMessage.includes("verify your email")) {
+             setErrors({ submit: "Please verify your email address to continue." });
+             setVerificationNeeded(true);
+             return;
+        }
+        setErrors({ submit: errorMessage });
         return;
       }
       const data = await res.json();
@@ -420,7 +473,20 @@ export default function SignInPage() {
               )}
             </div>
             {errors.submit && (
-              <p className="text-red-500 text-sm text-center mt-2">{errors.submit}</p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mt-2">
+                <p className="text-red-600 text-sm text-center">{errors.submit}</p>
+                {verificationNeeded && (
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={handleResendVerification}
+                    disabled={resendStatus === "sending" || resendStatus === "sent"}
+                    className="w-full mt-2 text-maroon border-maroon hover:bg-cream"
+                  >
+                    {resendStatus === "sending" ? "Sending..." : resendStatus === "sent" ? "Email Sent" : "Resend Verification Email"}
+                  </Button>
+                )}
+              </div>
             )}
               <Button
                 type="submit"

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 from typing import List
 from passlib.context import CryptContext
@@ -68,6 +69,48 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     return db_user
 
 
+
+def send_verification_email(to_email: str, token: str):
+    """Send verification email using SMTP"""
+    smtp_host = 'smtp.gmail.com'
+    smtp_port = 587
+    smtp_user = 'maneswapnil.0406@gmail.com'
+    smtp_pass = 'glvuhgbcsqjqnkvk'
+    smtp_from = 'PrepSphere <maneswapnil.0406@gmail.com>'
+    
+    verify_link = f"http://localhost:3003/verify-email?token={token}"
+    
+    subject = "Verify your email - PrepSphere"
+    body = f"""
+    Dear User,
+    
+    Welcome to PrepSphere! Please click the link below to verify your email address:
+    
+    {verify_link}
+    
+    If you did not create an account, please ignore this email.
+    
+    Best regards,
+    The PrepSphere Team
+    """
+    
+    msg = MIMEMultipart()
+    msg['From'] = smtp_from
+    msg['To'] = to_email
+    msg['Subject'] = subject
+    msg.attach(MIMEText(body, 'plain'))
+    
+    try:
+        server = smtplib.SMTP(smtp_host, smtp_port)
+        server.starttls()
+        server.login(smtp_user, smtp_pass)
+        server.sendmail(smtp_user, to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Error sending verification email: {e}")
+        return False
+
 @router.post("/register")
 def register_user(
     user_data: UserRegistration,
@@ -94,6 +137,9 @@ def register_user(
     # Generate a unique user ID if needed
     clerk_user_id = f"local_{secrets.token_hex(8)}"
     
+    # Generate verification token
+    verification_token = secrets.token_urlsafe(32)
+    
     # Create new user - ensure role is in uppercase to match enum values
     role_upper = role.upper()
     if role_upper not in ['STUDENT', 'TPO', 'ADMIN']:
@@ -106,11 +152,16 @@ def register_user(
         last_name=last_name,
         role=role_upper,
         phone_number=phone_number,
-        hashed_password=hashed_password  # Assuming User model has this field
+        hashed_password=hashed_password,  # Assuming User model has this field
+        is_verified=False,
+        verification_token=verification_token
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
+    
+    # Send verification email
+    send_verification_email(email, verification_token)
     
     # Automatically update analytics percentages when new user is registered
     if role_upper == 'STUDENT':
@@ -207,6 +258,50 @@ def register_user(
     
     return {"id": db_user.id, "email": db_user.email, "role": db_user.role.value}
 
+# Endpoints moved up
+
+@router.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    """Verify user email with token"""
+    # Find user with this verification token
+    db_user = db.query(User).filter(User.verification_token == token).first()
+    
+    if not db_user:
+        raise HTTPException(status_code=400, detail="Invalid verification token")
+    
+    # Verify the user
+    db_user.is_verified = True
+    db_user.verification_token = None  # Clear the token
+    db.commit()
+    
+    return {"message": "Email verified successfully"}
+
+@router.post("/resend-verification")
+def resend_verification(
+    email_data: ForgotPasswordRequest,
+    db: Session = Depends(get_db)
+):
+    """Resend verification email"""
+    email = email_data.email
+    
+    db_user = db.query(User).filter(User.email == email).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if db_user.is_verified:
+        raise HTTPException(status_code=400, detail="Email already verified")
+    
+    # Generate new token
+    verification_token = secrets.token_urlsafe(32)
+    db_user.verification_token = verification_token
+    db.commit()
+    
+    # Send email
+    if send_verification_email(email, verification_token):
+        return {"message": "Verification email sent"}
+    else:
+        raise HTTPException(status_code=500, detail="Failed to send verification email")
+
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(user_id: int, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.id == user_id).first()
@@ -251,6 +346,10 @@ def login_user(
     if not password_valid:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
+    # Check verification status
+    if not db_user.is_verified:
+        raise HTTPException(status_code=403, detail="Email not verified. Please verify your email to login.")
+    
     return {
         "id": db_user.id,
         "email": db_user.email,
@@ -259,6 +358,9 @@ def login_user(
         "last_name": db_user.last_name,
         "phone_number": db_user.phone_number
     }
+
+
+
 
 
 def send_reset_email(to_email: str, reset_token: str):
