@@ -893,101 +893,119 @@ export default function TPODashboard() {
                   {/* Job Analytics View */}
                   {analyticsView === 'job' && (
                     <div className="space-y-8">
+                      {/* Student Statistics Row */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-blue-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Active Jobs</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.activeJobs}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Students</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.totalStudents || stats.total_students}</h3>
                               </div>
-                              <Briefcase className="h-10 w-10 text-gold" />
+                              <div className="p-3 bg-blue-100 rounded-full">
+                                <Users className="h-8 w-8 text-blue-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-green-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Inactive Jobs</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.inactiveJobs}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Placed Students</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.placedStudents}</h3>
                               </div>
-                              <Briefcase className="h-10 w-10 text-gray-400" />
+                              <div className="p-3 bg-green-100 rounded-full">
+                                <CheckCircle className="h-8 w-8 text-green-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-red-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Placed Students</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.placedStudents}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Unplaced Students</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.unplacedStudents}</h3>
                               </div>
-                              <CheckCircle className="h-10 w-10 text-green-500" />
+                              <div className="p-3 bg-red-100 rounded-full">
+                                <Users className="h-8 w-8 text-red-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
-                        
-                        <Card className="border-none shadow-md">
+
+                        <Card className="border-l-4 border-l-purple-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Unplaced Students</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.unplacedStudents}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Placement Rate</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.placementPercentage}%</h3>
                               </div>
-                              <Users className="h-10 w-10 text-red-500" />
+                              <div className="p-3 bg-purple-100 rounded-full">
+                                <BarChart className="h-8 w-8 text-purple-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                       </div>
                       
+                      {/* Job Statistics Row */}
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-indigo-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Total Jobs</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalJobs || stats.total_jobs}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Jobs</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.totalJobs || stats.total_jobs}</h3>
                               </div>
-                              <Briefcase className="h-10 w-10 text-purple-500" />
+                              <div className="p-3 bg-indigo-100 rounded-full">
+                                <Briefcase className="h-8 w-8 text-indigo-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-emerald-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Total Applications</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalApplicants || stats.total_applications}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Active Jobs</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.activeJobs}</h3>
                               </div>
-                              <Users className="h-10 w-10 text-blue-500" />
+                              <div className="p-3 bg-emerald-100 rounded-full">
+                                <Briefcase className="h-8 w-8 text-emerald-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-gray-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Placement Rate</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.placementPercentage}%</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Inactive Jobs</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.inactiveJobs}</h3>
                               </div>
-                              <BarChart className="h-10 w-10 text-green-500" />
+                              <div className="p-3 bg-gray-100 rounded-full">
+                                <Briefcase className="h-8 w-8 text-gray-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                         
-                        <Card className="border-none shadow-md">
+                        <Card className="border-l-4 border-l-orange-500 shadow-md hover:shadow-lg transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex justify-between items-center">
                               <div>
-                                <p className="text-gray-600">Total Students</p>
-                                <h3 className="text-3xl font-bold text-maroon">{tpoAnalytics.totalStudents || stats.total_students}</h3>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Applications</p>
+                                <h3 className="text-3xl font-bold text-gray-800 mt-2">{tpoAnalytics.totalApplicants || stats.total_applications}</h3>
                               </div>
-                              <Users className="h-10 w-10 text-indigo-500" />
+                              <div className="p-3 bg-orange-100 rounded-full">
+                                <Users className="h-8 w-8 text-orange-600" />
+                              </div>
                             </div>
                           </CardContent>
                         </Card>

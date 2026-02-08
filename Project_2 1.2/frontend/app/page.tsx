@@ -10,7 +10,6 @@ import { Badge } from '@/components/ui/badge'
 
 // Import Recharts components
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LabelList, Cell } from 'recharts';
-import { Building2 } from 'lucide-react'
 
 export default function HomePage() {
   const { isSignedIn, user } = useUser()
@@ -135,18 +134,18 @@ export default function HomePage() {
 
 
   const recruiters = [
-    { name: 'TCS', industry: 'IT Services' },
-    { name: 'Infosys', industry: 'IT Services' },
-    { name: 'Wipro', industry: 'IT Services' },
-    { name: 'Cognizant', industry: 'IT Services' },
-    { name: 'Accenture', industry: 'Consulting' },
-    { name: 'Deloitte', industry: 'Consulting' },
-    { name: 'HDFC Bank', industry: 'Banking' },
-    { name: 'ICICI Bank', industry: 'Banking' },
-    { name: 'Amazon', industry: 'Technology' },
-    { name: 'Microsoft', industry: 'Technology' },
-    { name: 'Google', industry: 'Technology' },
-    { name: 'JPMorgan', industry: 'Banking' },
+    { name: 'TCS', industry: 'IT Services', logo: 'https://cdn.brandfetch.io/tcs.com/w/100/h/100' },
+    { name: 'Infosys', industry: 'IT Services', logo: 'https://cdn.brandfetch.io/infosys.com/w/100/h/100' },
+    { name: 'Wipro', industry: 'IT Services', logo: 'https://cdn.brandfetch.io/wipro.com/w/100/h/100' },
+    { name: 'Cognizant', industry: 'IT Services', logo: 'https://cdn.brandfetch.io/cognizant.com/w/100/h/100' },
+    { name: 'Accenture', industry: 'Consulting', logo: 'https://cdn.brandfetch.io/accenture.com/w/100/h/100' },
+    { name: 'Deloitte', industry: 'Consulting', logo: 'https://cdn.brandfetch.io/deloitte.com/w/100/h/100' },
+    { name: 'HDFC Bank', industry: 'Banking', logo: 'https://cdn.brandfetch.io/hdfcbank.com/w/100/h/100' },
+    { name: 'ICICI Bank', industry: 'Banking', logo: 'https://cdn.brandfetch.io/icicibank.com/w/100/h/100' },
+    { name: 'Amazon', industry: 'Technology', logo: 'https://cdn.brandfetch.io/amazon.com/w/100/h/100' },
+    { name: 'Microsoft', industry: 'Technology', logo: 'https://cdn.brandfetch.io/microsoft.com/w/100/h/100' },
+    { name: 'Google', industry: 'Technology', logo: 'https://cdn.brandfetch.io/google.com/w/100/h/100' },
+    { name: 'JPMorgan', industry: 'Banking', logo: 'https://cdn.brandfetch.io/jpmorganchase.com/w/100/h/100' },
   ];
 
   return (
@@ -407,8 +406,15 @@ export default function HomePage() {
               >
                 <CardContent className="p-6 h-32 flex items-center">
                   <div className="w-full flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-xl bg-gold/20 text-gold flex items-center justify-center shrink-0">
-                      <Building2 className="w-7 h-7" />
+                    <div className="w-14 h-14 rounded-xl bg-white p-2 flex items-center justify-center shrink-0 border border-gray-100 shadow-sm overflow-hidden">
+                      <img 
+                        src={company.logo} 
+                        alt={`${company.name} logo`} 
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = `https://ui-avatars.com/api/?name=${company.name}&background=random`;
+                        }}
+                      />
                     </div>
                     <div>
                       <div className="font-semibold text-lg">{company.name}</div>
@@ -425,7 +431,19 @@ export default function HomePage() {
             <div className="flex animate-marquee whitespace-nowrap items-center">
               {[...recruiters, ...recruiters, ...recruiters].map((company, index) => (
                 <div key={index} className="mx-3 inline-block">
-                  <div className="bg-white/10 text-white px-6 py-3 rounded-xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all cursor-default min-w-[140px] text-center flex items-center justify-center hover:scale-105">
+                  <div className="bg-white/10 text-white px-6 py-3 rounded-xl backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all cursor-default min-w-[160px] text-center flex items-center gap-3 hover:scale-105">
+                    <div className="w-8 h-8 rounded-full bg-white p-1 flex items-center justify-center shrink-0 overflow-hidden">
+                      <img 
+                        src={company.logo} 
+                        alt={company.name} 
+                        className="w-full h-full object-contain" 
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(company.name)}&background=random&color=fff&size=128`;
+                        }}
+                      />
+                    </div>
                     <span className="font-medium">{company.name}</span>
                   </div>
                 </div>
