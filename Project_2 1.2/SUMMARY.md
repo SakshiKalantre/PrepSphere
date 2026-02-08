@@ -1,228 +1,113 @@
 # PrepSphere - College Placement Management System
 
-A complete, modern web application for managing college placements with role-based dashboards for Students, TPO, and Admin.
+PrepSphere is a comprehensive, modern web application designed to streamline the college placement process. It bridges the gap between Students, Training & Placement Officers (TPOs), and Administrators through role-specific dashboards and efficient data management.
 
 ## 🏗️ Project Structure
 
 ```
 prepsphere/
-├── frontend/           # Next.js frontend application
-│   ├── app/            # App router pages and layouts
-│   │   ├── dashboard/  # Role-based dashboards
-│   │   │   ├── student/
-│   │   │   ├── tpo/
-│   │   │   └── admin/
-│   │   └── ...         # Public pages
-│   ├── components/     # Reusable UI components
-│   ├── lib/            # Utility functions
-│   └── public/         # Static assets
-├── backend/            # FastAPI backend API
-│   ├── app/            # Main application package
-│   │   ├── api/        # API routes
-│   │   ├── core/       # Configuration and security
-│   │   ├── db/         # Database session
-│   │   ├── models/     # Database models
-│   │   └── schemas/    # Pydantic schemas
-│   ├── uploads/        # File storage directory
-│   ├── main.py         # Application entry point
-│   ├── requirements.txt# Python dependencies
-│   └── .env.example    # Environment variables template
-├── RUNNING.md          # Local development guide
-├── DEPLOYMENT.md       # Production deployment guide
-└── README.md           # Project overview
+├── frontend/           # Next.js 14 Frontend Application
+│   ├── app/            # App Router (Pages & Layouts)
+│   │   ├── dashboard/  # Secured Role-Based Dashboards
+│   │   │   ├── student/# Student Interface
+│   │   │   ├── tpo/    # TPO Interface
+│   │   │   └── admin/  # Admin Interface
+│   │   ├── (public)/   # Public Pages (Landing, About, Contact)
+│   │   └── layout.tsx  # Root Layout
+│   ├── components/     # Reusable UI Components (ShadCN/Custom)
+│   ├── lib/            # Utilities (API clients, formatting)
+│   └── public/         # Static Assets
+├── backend/            # FastAPI Backend Application
+│   ├── app/            # Core Application Logic
+│   │   ├── api/        # REST API Routes (v1)
+│   │   ├── core/       # Config, Security, Auth
+│   │   ├── db/         # Database Session & Base
+│   │   ├── models/     # SQLAlchemy Database Models
+│   │   └── schemas/    # Pydantic Data Schemas
+│   ├── uploads/        # Local File Storage (Fallback)
+│   ├── main.py         # App Entry Point
+│   └── requirements.txt# Python Dependencies
+├── DATABASE_SCHEMA.md  # Detailed Database Documentation
+└── README.md           # Quick Start Guide
 ```
 
-## 🚀 Key Features
+## 🚀 Key Features & Modules
 
-### Authentication
-- Clerk integration for secure authentication
-- Google and email login support
-- Role-based access control (Student, TPO, Admin)
+### 1. Authentication & Security
+*   **Provider**: Clerk Authentication (Secure, robust user management).
+*   **Roles**:
+    *   **Student**: Access to jobs, events, profile management.
+    *   **TPO**: Management of placement drive, verification, analytics.
+    *   **Admin**: System-wide user and content control.
+*   **Security**: Role-Based Access Control (RBAC), JWT verification, CORS protection.
 
-### Public Pages
-- Responsive homepage with college information
-- About section for placement cell
-- Recruiters showcase
-- Achievements display
-- Contact form and information
+### 2. Student Module
+*   **Profile Management**: Detailed academic and personal profile creation.
+*   **Document Vault**: Upload and manage Resumes and Certificates (PDF/Image).
+*   **Job Portal**: Browse active job listings, view details, and apply with one click.
+*   **Event Calendar**: Register for workshops, interviews, and seminars.
+*   **Application Tracking**: Real-time status updates on job applications.
+*   **Analytics**: Personal placement insights.
 
-### Student Dashboard
-- Profile management
-- Resume and certificate upload
-- Job listings browsing
-- Event registration
-- Notification system
-- AI tools integration (iframe)
+### 3. TPO (Training & Placement Officer) Module
+*   **Dashboard Analytics**:
+    *   **Student Statistics**: Total students, Placed/Unplaced counts, Higher Studies, etc.
+    *   **Job Statistics**: Total jobs, Active/Inactive listings, Application volume.
+    *   *Visualized with Recharts and color-coded metric cards.*
+*   **Student Verification**: Review and approve student profiles and uploaded documents.
+*   **Job Management**: Create, edit, and close job postings with detailed requirements.
+*   **Application Review**: Shortlist, accept, or reject student applications.
+*   **Event Management**: Organize and schedule campus events.
 
-### TPO Dashboard
-- Student profile approval
-- Resume review system
-- Job posting management
-- Event creation
-- Applicant tracking
-- Email notifications
+### 4. Public Interface
+*   **Landing Page**: Modern, responsive design showcasing college placement highlights.
+*   **Recruiter Showcase**: Dynamic "Leading Companies" section fetching real company logos via **Brandfetch API**.
+*   **Contact System**: Integrated contact form for inquiries.
 
-### Admin Dashboard
-- User management
-- Role assignment
-- Analytics and reporting
-- College content management
+## 🎨 Design & UI/UX
 
-### Backend API
-- RESTful API with FastAPI
-- PostgreSQL database integration
-- File upload and management
-- Clerk token verification
-- Comprehensive data models
+### Design System
+*   **Framework**: Tailwind CSS.
+*   **Component Library**: ShadCN UI (Radix Primitives).
+*   **Icons**: Lucide React.
+*   **Charts**: Recharts.
 
-## 🎨 Design & UX
+### Color Palette
+The application follows a premium academic theme:
+*   **Primary (Maroon)**: `#7A1F2A` - Used for headers, primary buttons, and branding.
+*   **Accent (Gold)**: `#D6B36A` - Used for highlights, active states, and premium touches.
+*   **Background (Cream)**: `#FFF8F2` - Used for main content areas for readability.
+*   **Neutral**: Slate/Gray scale for text and borders.
 
-### Color Scheme
-- **Maroon**: #7A1F2A (Primary brand color)
-- **Gold**: #D6B36A (Accent and highlights)
-- **Cream**: #FFF8F2 (Background and light elements)
+### Layouts
+*   **Public**: Full-width, hero-centric layouts with responsive navigation.
+*   **Dashboard**: Sidebar navigation with collapsible menus, sticky headers, and grid-based content areas.
 
-### Responsive Design
-- Mobile-first approach
-- Tablet and desktop optimizations
-- Flexible grid layouts
-- Touch-friendly interactions
-
-### UI Components
-- Modern card-based design
-- Intuitive navigation
-- Clear visual hierarchy
-- Consistent styling across roles
-
-## 🔧 Technical Implementation
-
-### Frontend Stack
-- **Next.js 14** with App Router
-- **TailwindCSS** for styling
-- **ShadCN UI** components
-- **Clerk** authentication
-- **TypeScript** for type safety
-
-### Backend Stack
-- **FastAPI** for API development
-- **SQLAlchemy** ORM
-- **PostgreSQL** database
-- **Pydantic** for data validation
-- **Clerk SDK** for authentication
-
-### File Handling
-- Support for PDF, JPG, PNG files
-- 10MB file size limit
-- Metadata storage in database
-- File storage in local directory
-
-## 📱 Dashboards Overview
-
-### Student Dashboard
-- Personal profile editing
-- Document upload interface
-- Job listing cards with filters
-- Event calendar view
-- Notification center
-- AI tools access
-
-### TPO Dashboard
-- Pending approvals queue
-- Job posting creation form
-- Event management system
-- Application tracking
-- Communication tools
-
-### Admin Dashboard
-- User management table
-- Analytics charts
-- Content editing forms
-- Role assignment controls
-
-## 🔐 Security Features
-
-- JWT-based authentication
-- Role-based authorization
-- File type validation
-- Size limit enforcement
-- CORS protection
-- SQL injection prevention
-
-## 📈 Performance Optimizations
-
-- Database indexing
-- API response caching
-- Lazy loading components
-- Image optimization
-- Bundle splitting
-
-## 🛠️ Development Experience
+## 🔧 Technical Stack
 
 ### Frontend
-- Component-driven development
-- TypeScript for error prevention
-- ESLint and Prettier for code quality
-- Hot reloading in development
+*   **Core**: Next.js 14 (App Router), React 18, TypeScript.
+*   **Styling**: Tailwind CSS, CSS Modules.
+*   **State/Data**: React Hooks, SWR (stale-while-revalidate).
+*   **Integrations**: Clerk (Auth), Brandfetch (Logos), UI Avatars (Fallback).
 
 ### Backend
-- Auto-generated API documentation
-- Pydantic validation
-- SQLAlchemy relationships
-- Environment-based configuration
+*   **Core**: FastAPI (Python 3.12+), Uvicorn.
+*   **Database**: PostgreSQL (hosted on **Neon DB**), SQLAlchemy ORM.
+*   **Validation**: Pydantic v2.
+*   **File Storage**:
+    *   **Primary**: Cloudflare R2 (S3-compatible object storage).
+    *   **Fallback**: Local filesystem storage (for development).
+    *   **Features**: MIME type validation, file hashing, size limits (10MB).
 
-## 🚀 Deployment Ready
+## 💾 Database Schema Overview
 
-- Containerization support
-- Environment variable configuration
-- Database migration patterns
-- CI/CD pipeline ready
-- Monitoring and logging hooks
+The system uses a relational PostgreSQL database with the following key entities:
+*   **Users & Profiles**: Core identity and extended student details.
+*   **Jobs & Applications**: Recruitment drive management.
+*   **Events & Registrations**: Campus activity tracking.
+*   **Files & Certificates**: Document metadata and verification status.
+*   **Analytics**: Aggregated placement data tables.
+*   **Notifications**: System-wide alert tracking.
 
-## 📖 Documentation
-
-- Comprehensive setup guides
-- Deployment instructions
-- API documentation
-- Troubleshooting guides
-- Best practices
-
-## ✅ Getting Started
-
-1. **Frontend Setup**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-2. **Backend Setup**:
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   uvicorn main:app --reload
-   ```
-
-3. **Environment Configuration**:
-   - Copy `.env.example` to `.env`
-   - Update with your credentials
-
-## 🎯 Future Enhancements
-
-- Real-time notifications with WebSocket
-- Advanced analytics dashboard
-- Mobile application
-- AI-powered job matching
-- Video interview integration
-- Alumni network features
-
-## 🤝 Support
-
-For issues, questions, or contributions:
-1. Check the documentation in each directory
-2. Review existing issues
-3. Submit bug reports or feature requests
-4. Contribute improvements via pull requests
-
----
-
-*PrepSphere is designed to streamline college placement processes with a modern, user-friendly interface and robust backend functionality.*
+*(See `DATABASE_SCHEMA.md` for full detailed schema)*
