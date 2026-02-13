@@ -9,7 +9,7 @@ To configure the database, ensure your `.env` file in the backend directory cont
 
 Example for Neon DB:
 ```env
-DATABASE_URL=postgresql://neondb_owner:***********@ep-***.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://neondb_owner:npg_SIX1McwNmVA0@ep-bitter-queen-a7zgtwri-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 ```
 
 ## Tables Schema
@@ -222,3 +222,28 @@ Student resume files.
 - `verification_notes` (Text, Optional)
 - `uploaded_at` (DateTime)
 - `verified_at` (DateTime, Optional)
+
+## Email Configuration
+
+The application includes SMTP email functionality managed in `backend/app/api/v1/users.py`:
+- SMTP Host: smtp.gmail.com
+- SMTP Port: 587
+- SMTP User: maneswapnil.0406@gmail.com
+- SMTP Password: glvuhgbcsqjqnkvk
+
+This configuration is used for:
+- Account verification emails
+- Password reset emails
+
+## File Storage Configuration
+
+The application supports multiple file storage options:
+- Primary: Cloudflare R2 (S3-compatible object storage)
+- Fallback: Local filesystem storage (uploads directory)
+
+Cloudflare R2 configuration in `.env`:
+- R2_ACCESS_KEY_ID
+- R2_SECRET_ACCESS_KEY
+- R2_ACCOUNT_ID
+- R2_BUCKET_NAME
+- R2_ENDPOINT

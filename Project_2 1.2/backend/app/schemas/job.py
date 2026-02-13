@@ -91,3 +91,19 @@ class JobApplicationResponse(JobApplicationBase):
     
     class Config:
         from_attributes = True
+
+
+class JobApplicationWithUserResponse(BaseModel):
+    id: int
+    job_id: int
+    user_id: int
+    resume_id: Optional[int] = None
+    cover_letter: Optional[str] = None
+    status: str
+    applied_at: datetime
+    first_name: str
+    last_name: str
+    email: str
+    
+    class Config:
+        from_attributes = True

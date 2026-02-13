@@ -10,6 +10,7 @@ Before running the application, ensure you have installed:
 2. **Python** (version 3.8 or higher)
 3. **PostgreSQL** database
 4. **Git** (for cloning the repository)
+5. **SMTP email service** for email functionality
 
 ## Setting Up the Environment
 
@@ -69,12 +70,17 @@ MAX_FILE_SIZE=10485760
 SECRET_KEY=your-development-secret-key
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_ACCOUNT_ID=your_r2_account_id
+R2_BUCKET_NAME=your_r2_bucket_name
+R2_ENDPOINT=your_r2_endpoint
 ```
 
 ### 5. Run the Backend Server
 
 ```bash
-uvicorn main:app --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The backend will be available at: http://localhost:8000
@@ -108,6 +114,8 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+NEXT_PUBLIC_API_URL=http://localhost:8000
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ### 4. Run the Frontend Server
@@ -125,9 +133,27 @@ The frontend will be available at: http://localhost:3000
 3. Get your API keys from the Clerk dashboard
 4. Update the environment variables with your actual keys
 
+## Email Configuration
+
+The application includes SMTP email functionality for:
+- Account verification emails
+- Password reset emails
+
+Configuration in `backend/app/api/v1/users.py`:
+- SMTP Host: smtp.gmail.com
+- SMTP Port: 587
+- SMTP User: maneswapnil.0406@gmail.com
+- SMTP Password: glvuhgbcsqjqnkvk
+
+To configure your own SMTP settings, update the email functions in `users.py`.
+
 ## File Uploads
 
-The application stores uploaded files in the `backend/uploads` directory. This directory is automatically created when you first upload a file.
+The application supports multiple file storage options:
+- Primary: Cloudflare R2 (S3-compatible object storage)
+- Fallback: Local filesystem storage (uploads directory)
+
+The application stores uploaded files in the `backend/uploads` directory by default. This directory is automatically created when you first upload a file.
 
 ## Development Workflow
 
@@ -139,7 +165,7 @@ You'll need two terminal windows:
 ```bash
 cd backend
 source venv/bin/activate  # or venv\Scripts\activate on Windows
-uvicorn main:app --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **Terminal 2 (Frontend):**
@@ -189,7 +215,11 @@ For testing purposes, you can modify user roles directly in the database or impl
 
 Try uploading resumes and certificates to test the file handling functionality.
 
-### 5. Test API Endpoints
+### 5. Test Email Functionality
+
+Test account verification and password reset emails to ensure SMTP configuration is working.
+
+### 6. Test API Endpoints
 
 Use the Swagger UI at http://localhost:8000/docs to test API endpoints directly.
 
@@ -206,7 +236,7 @@ npm run dev -- -p 3001
 
 **Backend:**
 ```bash
-uvicorn main:app --reload --port 8001
+python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 Remember to update the CORS origins in the backend `.env` file if you change the frontend port.
@@ -226,6 +256,10 @@ Double-check that all required environment variables are set in both `.env` (bac
 ### 4. CORS Errors
 
 Ensure `BACKEND_CORS_ORIGINS` in your backend `.env` includes your frontend URL.
+
+### 5. SMTP Email Issues
+
+Ensure SMTP settings in `backend/app/api/v1/users.py` are correctly configured and that your email service allows app-specific passwords.
 
 ## Stopping the Application
 
@@ -277,6 +311,7 @@ npm run start
 3. **Use browser dev tools** to inspect network requests
 4. **Check database logs** for SQL errors
 5. **Enable debug logging** in development
+6. **Test email delivery** by checking SMTP logs
 
 ## Next Steps
 
@@ -284,6 +319,7 @@ Once you have the application running locally:
 
 1. Explore the different dashboards (Student, TPO, Admin)
 2. Test all CRUD operations
-3. Customize the branding and styling
-4. Add new features as needed
-5. Prepare for deployment using the DEPLOYMENT.md guide
+3. Test email functionality
+4. Customize the branding and styling
+5. Add new features as needed
+6. Prepare for deployment using the DEPLOYMENT.md guide

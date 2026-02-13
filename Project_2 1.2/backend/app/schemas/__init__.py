@@ -6,7 +6,7 @@ from .user import (
 )
 from .job import (
     JobBase, JobCreate, JobUpdate, JobResponse,
-    JobApplicationBase, JobApplicationCreate, JobApplicationResponse,
+    JobApplicationBase, JobApplicationCreate, JobApplicationResponse, JobApplicationWithUserResponse,
     ApplicationStatus
 )
 from .event import (
@@ -31,7 +31,7 @@ __all__ = [
     "ProfileBase", "ProfileCreate", "ProfileUpdate", "ProfileResponse",
     "UserRole",
     "JobBase", "JobCreate", "JobUpdate", "JobResponse",
-    "JobApplicationBase", "JobApplicationCreate", "JobApplicationResponse",
+    "JobApplicationBase", "JobApplicationCreate", "JobApplicationResponse", "JobApplicationWithUserResponse",
     "ApplicationStatus",
     "EventBase", "EventCreate", "EventUpdate", "EventResponse",
     "EventRegistrationBase", "EventRegistrationCreate", "EventRegistrationResponse",

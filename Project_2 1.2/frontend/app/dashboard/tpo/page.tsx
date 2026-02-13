@@ -852,13 +852,13 @@ export default function TPODashboard() {
                   <h2 className="text-2xl font-bold text-maroon">Dashboard Overview</h2>
                   <Button variant="outline" onClick={async()=>{
                     try {
-                      const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/stats/summary.pdf`)
+                      const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/stats/report-text`)
                       if (res.ok) {
                         const blob = await res.blob()
                         const url = URL.createObjectURL(blob)
                         const a = document.createElement('a')
                         a.href = url
-                        a.download = 'tpo_summary.pdf'
+                        a.download = 'tpo_dashboard_report.txt'
                         document.body.appendChild(a)
                         a.click()
                         a.remove()
@@ -1356,20 +1356,20 @@ export default function TPODashboard() {
                       }}>Save</Button>
                       <Button variant="outline" onClick={async()=>{
                         try {
-                          const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/stats/summary.pdf`)
+                          const res = await fetch(`${API_BASE_DEFAULT}/api/v1/tpo/stats/report-text`)
                           if (res.ok) {
                             const blob = await res.blob()
                             const url = URL.createObjectURL(blob)
                             const a = document.createElement('a')
                             a.href = url
-                            a.download = 'tpo_summary.pdf'
+                            a.download = 'tpo_dashboard_report.txt'
                             document.body.appendChild(a)
                             a.click()
                             a.remove()
                             URL.revokeObjectURL(url)
                           }
                         } catch {}
-                      }}>Download Statistical Report</Button>
+                      }}>Download Text Report</Button>
                     </div>
                   </CardContent>
                 </Card>

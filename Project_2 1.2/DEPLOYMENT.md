@@ -14,6 +14,8 @@ Before deploying, ensure you have:
    - PostgreSQL database
    - At least 2GB RAM
 4. Clerk account with API keys
+5. Cloudflare R2 account for file storage (optional but recommended)
+6. SMTP email service for notifications
 
 ## Architecture Overview
 
@@ -27,6 +29,10 @@ Before deploying, ensure you have:
                        ┌─────────▼────────┐
                        │  PostgreSQL DB   │
                        │                  │
+                       └──────────────────┘
+                       ┌─────────▼────────┐
+                       │  Cloudflare R2   │
+                       │   File Storage   │
                        └──────────────────┘
 ```
 
@@ -44,6 +50,8 @@ Before deploying, ensure you have:
    NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
    NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
    NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+   NEXT_PUBLIC_API_URL=https://your-backend-domain.com
+   GEMINI_API_KEY=your_gemini_api_key
    ```
 5. Deploy and Vercel will provide you with a URL
 
@@ -72,6 +80,11 @@ Before deploying, ensure you have:
    DATABASE_URL=your_postgresql_connection_string
    CLERK_SECRET_KEY=your_clerk_secret_key
    SECRET_KEY=your_random_secret_key
+   R2_ACCESS_KEY_ID=your_r2_access_key
+   R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+   R2_ACCOUNT_ID=your_r2_account_id
+   R2_BUCKET_NAME=your_r2_bucket_name
+   R2_ENDPOINT=your_r2_endpoint
    ```
 
 ### Option 2: Manual Deployment
@@ -96,6 +109,7 @@ Before deploying, ensure you have:
 
 Use services like:
 - Supabase
+- Neon DB
 - Render PostgreSQL
 - Heroku Postgres
 - AWS RDS
@@ -125,6 +139,44 @@ Use services like:
    DATABASE_URL=postgresql://prepsphere_user:your_secure_password@localhost:5432/prepsphere
    ```
 
+## File Storage Configuration
+
+### Cloudflare R2 (Recommended)
+
+1. Sign up for Cloudflare and create an R2 bucket
+2. Generate access keys in the R2 dashboard
+3. Configure the following environment variables:
+   ```
+   R2_ACCESS_KEY_ID=your_r2_access_key
+   R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+   R2_ACCOUNT_ID=your_r2_account_id
+   R2_BUCKET_NAME=your_r2_bucket_name
+   R2_ENDPOINT=your_r2_endpoint
+   ```
+
+### Fallback: Local Storage
+
+For development or simple deployments, the application can store files locally in the `uploads` directory.
+
+## Email Configuration
+
+### SMTP Setup
+
+The application includes SMTP email functionality for:
+- Account verification emails
+- Password reset emails
+
+Configure the following in `backend/app/api/v1/users.py`:
+- SMTP Host: Your SMTP provider (e.g., smtp.gmail.com)
+- SMTP Port: 587 (TLS) or 465 (SSL)
+- SMTP Username: Your email address
+- SMTP Password: Your email password or app-specific password
+
+For Gmail, you'll need to:
+1. Enable 2-factor authentication
+2. Generate an app-specific password
+3. Use smtp.gmail.com with port 587 and TLS
+
 ## Environment Variables
 
 ### Frontend (.env.local)
@@ -134,12 +186,15 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+NEXT_PUBLIC_API_URL=https://your-backend-domain.com
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ### Backend (.env)
 ```env
 DATABASE_URL=postgresql://user:password@host:port/database
 CLERK_SECRET_KEY=your_clerk_secret_key_here
+CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
 SECRET_KEY=your_random_secret_key_at_least_32_characters
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
@@ -147,6 +202,11 @@ UPLOAD_FOLDER=./uploads
 MAX_FILE_SIZE=10485760
 PROJECT_NAME=PrepSphere
 BACKEND_CORS_ORIGINS=["https://yourdomain.com","https://www.yourdomain.com"]
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_ACCOUNT_ID=your_r2_account_id
+R2_BUCKET_NAME=your_r2_bucket_name
+R2_ENDPOINT=your_r2_endpoint
 ```
 
 ## SSL Configuration
@@ -270,8 +330,8 @@ args=('app.log',)
 
 ### File Backups
 
-1. Regular backups of the uploads directory
-2. Consider using cloud storage (AWS S3, Google Cloud Storage) for file storage in production
+1. Regular backups of the uploads directory if using local storage
+2. For Cloudflare R2, backups are handled automatically by Cloudflare
 
 ## Scaling Considerations
 
@@ -279,7 +339,7 @@ args=('app.log',)
 
 1. Use load balancer for multiple frontend/backend instances
 2. Shared database or database clustering
-3. Shared file storage (S3, Google Cloud Storage)
+3. Shared file storage (Cloudflare R2)
 
 ### Vertical Scaling
 
@@ -296,6 +356,7 @@ args=('app.log',)
 5. Regular security audits
 6. Secure file uploads (validate MIME types, file sizes)
 7. Use environment variables for secrets (never hardcode)
+8. Enable SMTP authentication and use secure connections
 
 ## Troubleshooting
 
@@ -305,6 +366,7 @@ args=('app.log',)
 2. **Database Connection**: Verify DATABASE_URL format and credentials
 3. **Clerk Authentication**: Check API keys and domain settings in Clerk dashboard
 4. **File Upload Issues**: Check file size limits and permissions
+5. **Email Issues**: Verify SMTP settings and authentication
 
 ### Logs
 
@@ -320,3 +382,4 @@ For issues with deployment, contact the development team or refer to:
 - [Next.js Documentation](https://nextjs.org/docs)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Clerk Documentation](https://docs.clerk.dev/)
+- [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi.responses import PlainTextResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
 from typing import List, Optional, Any
@@ -18,7 +19,7 @@ from app.models.user import User, UserRole, Profile
 from app.models.job import Job, JobApplication
 from app.models.event import Event, EventRegistration
 from app.models.notification import Notification, NotificationType
-from app.schemas.job import JobCreate, JobResponse, JobUpdate, JobApplicationResponse
+from app.schemas.job import JobCreate, JobResponse, JobUpdate, JobApplicationResponse, JobApplicationWithUserResponse
 from app.schemas.event import EventCreate, EventResponse, EventUpdate
 
 from app.models.file import FileUpload
@@ -380,10 +381,30 @@ def delete_tpo_job(job_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Job deleted successfully"}
 
-@router.get("/jobs/{job_id}/applications", response_model=List[JobApplicationResponse])
+@router.get("/jobs/{job_id}/applications", response_model=List[JobApplicationWithUserResponse])
 def get_job_applications(job_id: int, db: Session = Depends(get_db)):
-    applications = db.query(JobApplication).filter(JobApplication.job_id == job_id).all()
-    return applications
+    # Join applications with user data to get applicant information
+    applications = db.query(JobApplication, User).join(User, JobApplication.user_id == User.id).filter(
+        JobApplication.job_id == job_id
+    ).all()
+    
+    # Prepare response data that includes user information
+    result = []
+    for app, user in applications:
+        result.append({
+            'id': app.id,
+            'job_id': app.job_id,
+            'user_id': app.user_id,
+            'resume_id': app.resume_id,
+            'cover_letter': app.cover_letter,
+            'status': app.status,
+            'applied_at': app.applied_at,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email
+        })
+    
+    return result
 
 # --- Events ---
 
@@ -525,6 +546,118 @@ def approve_profile(
         "is_approved": profile.is_approved,
         "approval_status": profile.approval_status
     }
+
+
+@router.get("/stats/report-text", response_class=PlainTextResponse)
+def get_tpo_stats_text_report(db: Session = Depends(get_db)):
+    """Generate a structured text report with job analytics and event analytics"""
+    
+    # Get current timestamp
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    # Get job analytics
+    total_jobs = db.query(Job).count()
+    active_jobs = db.query(Job).filter(Job.is_active == True).count()
+    inactive_jobs = total_jobs - active_jobs
+    
+    # Get application statistics
+    total_applications = db.query(JobApplication).count()
+    
+    # Get placed/unplaced students
+    total_students = db.query(User).filter(User.role == UserRole.STUDENT).count()
+    total_placed = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Placed'
+    ).count()
+    total_unplaced = total_students - total_placed
+    
+    # Get unplaced reasons
+    unplaced_higher_studies = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Higher Studies'
+    ).count()
+    
+    unplaced_exploring = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Exploring'
+    ).count()
+    
+    unplaced_others = db.query(Profile).join(User, Profile.user_id == User.id).filter(
+        (User.role == 'STUDENT') | (func.upper(User.role) == 'STUDENT'),
+        Profile.placement_status == 'Not Placed',
+        Profile.unplaced_reason == 'Others'
+    ).count()
+    
+    # Get event analytics
+    total_events = db.query(Event).count()
+    upcoming_events = db.query(Event).filter(Event.status == 'Upcoming').count()
+    completed_events = db.query(Event).filter(Event.status == 'Completed').count()
+    cancelled_events = db.query(Event).filter(Event.status == 'Cancelled').count()
+    
+    # Get event registrations
+    total_registrations = db.query(EventRegistration).count()
+    
+    # Create the structured text report
+    report_lines = []
+    
+    # Header
+    report_lines.append("=" * 60)
+    report_lines.append("PREPSPHERE TPO DASHBOARD ANALYTICS REPORT")
+    report_lines.append("=" * 60)
+    report_lines.append(f"Generated on: {current_time}")
+    report_lines.append("")
+    
+    # Job Analytics Section
+    report_lines.append("[1] JOB ANALYTICS")
+    report_lines.append("-" * 30)
+    report_lines.append(f"Total Jobs: {total_jobs}")
+    report_lines.append(f"Active Jobs: {active_jobs}")
+    report_lines.append(f"Inactive Jobs: {inactive_jobs}")
+    report_lines.append(f"Total Applications: {total_applications}")
+    report_lines.append("")
+    
+    # Student Placement Statistics
+    report_lines.append("[2] STUDENT PLACEMENT STATISTICS")
+    report_lines.append("-" * 40)
+    report_lines.append(f"Total Students: {total_students}")
+    report_lines.append(f"Placed Students: {total_placed}")
+    report_lines.append(f"Unplaced Students: {total_unplaced}")
+    report_lines.append("")
+    
+    # Unplaced Reason Breakdown
+    report_lines.append("[3] UNPLACED REASON ANALYSIS")
+    report_lines.append("-" * 35)
+    report_lines.append(f"Higher Studies: {unplaced_higher_studies}")
+    report_lines.append(f"Exploring Options: {unplaced_exploring}")
+    report_lines.append(f"Other Reasons: {unplaced_others}")
+    report_lines.append("")
+    
+    # Event Analytics Section
+    report_lines.append("[4] EVENT ANALYTICS")
+    report_lines.append("-" * 25)
+    report_lines.append(f"Total Events: {total_events}")
+    report_lines.append(f"Upcoming Events: {upcoming_events}")
+    report_lines.append(f"Completed Events: {completed_events}")
+    report_lines.append(f"Cancelled Events: {cancelled_events}")
+    report_lines.append(f"Total Event Registrations: {total_registrations}")
+    report_lines.append("")
+    
+    # Footer
+    report_lines.append("=" * 60)
+    report_lines.append("END OF REPORT")
+    report_lines.append("=" * 60)
+    
+    # Join all lines with newlines
+    report_content = "\n".join(report_lines)
+    
+    return PlainTextResponse(
+        content=report_content,
+        headers={
+            "Content-Disposition": "attachment; filename=tpo_dashboard_report.txt"
+        }
+    )
 
 
 @router.post("/analytics-percentages/calculate")

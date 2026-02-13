@@ -2,14 +2,19 @@
 
 ### Prerequisites
 1. PostgreSQL installed and running
-2. Database created: `Project_2`
-3. User created with credentials: `user / Swapnil@2102`
+2. Database created with appropriate credentials
+3. Environment variables configured for database connection
 
 ### Step 1: Update Environment Variables
 
 Verify `.env` file has the correct DATABASE_URL:
 ```
-DATABASE_URL=postgresql://user:Swapnil%402102@localhost:5432/Project_2
+DATABASE_URL=postgresql://username:password@localhost:5432/prepsphere
+```
+
+For Neon DB (recommended for development):
+```
+DATABASE_URL=postgresql://neondb_owner:npg_SIX1McwNmVA0@ep-bitter-queen-a7zgtwri-pooler.ap-southeast-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 ```
 
 ### Step 2: Install Dependencies
@@ -30,7 +35,7 @@ python init_db.py
 
 **Method 2: Run FastAPI app (auto-creates tables)**
 ```bash
-uvicorn main:app --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 The `create_tables()` function in `main.py` will automatically create all tables on startup.
@@ -53,13 +58,16 @@ Connect to PostgreSQL and verify tables were created:
 -- event_registrations
 -- file_uploads
 -- notifications
+-- password_reset_tokens
+-- analytics_percentages
+-- contact_messages
 ```
 
 ### Clerk Authentication Setup
 
 #### Frontend (Already Configured)
-- Site Key: `6LfpQR8sAAAAAAobkCurmWSGgJQE9yMCcR08OwpE`
-- reCAPTCHA integrated on sign-up and sign-in pages
+- Site Key: `pk_test_YWRqdXN0ZWQtY291Z2FyLTIxLmNsZXJrLmFjY291bnRzLmRldiQ`
+- Authentication integrated via Clerk SDK
 - Social sign-in buttons for Google, GitHub, LinkedIn
 
 #### Backend Configuration
@@ -84,6 +92,20 @@ user = ClerkAuth.sync_user_with_db(
 )
 print(f"User created: {user.email}")
 ```
+
+### SMTP Email Configuration
+
+The application includes SMTP email functionality for:
+- Account verification emails
+- Password reset emails
+
+Configuration in `backend/app/api/v1/users.py`:
+- SMTP Host: smtp.gmail.com
+- SMTP Port: 587
+- SMTP User: maneswapnil.0406@gmail.com
+- SMTP Password: glvuhgbcsqjqnkvk
+
+To configure your own SMTP settings, update the email functions in `users.py`.
 
 ### Testing the Setup
 
@@ -147,12 +169,20 @@ curl http://localhost:8000/health
    - Related to specific objects (job_id, application_id, etc.)
    - Track read status and read timestamp
 
+7. **Analytics**
+   - Stores placement percentages and statistics
+   - Tracks placement rates and student outcomes
+
+8. **Contact Messaging**
+   - Stores messages from the contact form
+   - Includes company details and message content
+
 ### Troubleshooting
 
 #### "psycopg2 connection refused"
 - Verify PostgreSQL is running
 - Check credentials in DATABASE_URL
-- Verify database `Project_2` exists
+- Verify database exists
 
 #### "Table already exists"
 - Tables are idempotent - safe to run multiple times
@@ -162,6 +192,11 @@ curl http://localhost:8000/health
 - Verify CLERK_SECRET_KEY in .env
 - Check internet connection to Clerk API
 - Verify JWT tokens from frontend are valid
+
+#### "SMTP email sending failed"
+- Verify SMTP credentials are correct
+- Check if less secure apps are enabled for Gmail
+- Ensure application-specific password is used for Gmail
 
 ### Next Steps
 
@@ -189,12 +224,12 @@ curl http://localhost:8000/health
 
 #### Backup
 ```bash
-pg_dump -U user -h localhost Project_2 > backup.sql
+pg_dump -U username -h localhost prepsphere > backup.sql
 ```
 
 #### Restore
 ```bash
-psql -U user -h localhost Project_2 < backup.sql
+psql -U username -h localhost prepsphere < backup.sql
 ```
 
 #### Vacuum (Optimize)

@@ -9,6 +9,8 @@ Before beginning the setup, ensure you have the following:
 1. **Operating System**: Windows 10/11, macOS 10.14+, or Linux
 2. **Administrative privileges** to install software
 3. **Internet connection** for downloading dependencies
+4. **SMTP email service** for email functionality
+5. **Cloudflare R2 account** for file storage (optional but recommended)
 
 ## Step 1: Install Node.js
 
@@ -68,7 +70,19 @@ Before beginning the setup, ensure you have the following:
    - Publishable Key (pk_test_...)
    - Secret Key (sk_test_...)
 
-## Step 6: Configure Environment Variables
+## Step 6: Configure Cloudflare R2 (Optional but Recommended)
+
+1. Sign up at [cloudflare.com](https://www.cloudflare.com/)
+2. Create an R2 bucket for file storage
+3. Generate access keys in the R2 dashboard
+4. Note your:
+   - Account ID
+   - Access Key ID
+   - Secret Access Key
+   - Bucket Name
+   - Endpoint URL
+
+## Step 7: Configure Environment Variables
 
 ### Frontend (.env.local)
 Create a file named `.env.local` in the `frontend` directory:
@@ -80,6 +94,8 @@ NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
 NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=/dashboard
 NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL=/dashboard
+NEXT_PUBLIC_API_URL=http://localhost:8000
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
 ### Backend (.env)
@@ -96,9 +112,31 @@ MAX_FILE_SIZE=10485760
 SECRET_KEY=your-random-secret-key-at-least-32-characters
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_ACCOUNT_ID=your_r2_account_id
+R2_BUCKET_NAME=your_r2_bucket_name
+R2_ENDPOINT=your_r2_endpoint
 ```
 
-## Step 7: Install Frontend Dependencies
+## Step 8: Configure SMTP Email Settings
+
+The application includes SMTP email functionality for:
+- Account verification emails
+- Password reset emails
+
+Update the email configuration in `backend/app/api/v1/users.py`:
+- SMTP Host: Your SMTP provider (e.g., smtp.gmail.com)
+- SMTP Port: 587 (TLS) or 465 (SSL)
+- SMTP Username: Your email address
+- SMTP Password: Your email password or app-specific password
+
+For Gmail, you'll need to:
+1. Enable 2-factor authentication
+2. Generate an app-specific password
+3. Use smtp.gmail.com with port 587 and TLS
+
+## Step 9: Install Frontend Dependencies
 
 1. Navigate to the frontend directory:
    ```bash
@@ -110,7 +148,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
    npm install
    ```
 
-## Step 8: Install Backend Dependencies
+## Step 10: Install Backend Dependencies
 
 1. Navigate to the backend directory:
    ```bash
@@ -136,16 +174,16 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
    pip install -r requirements.txt
    ```
 
-## Step 9: Run Database Migrations
+## Step 11: Run Database Migrations
 
 The application automatically creates tables on first run, but you can also manually create them:
 
 ```bash
 # Make sure you're in the backend directory with the virtual environment activated
-python -c "from main import create_tables; import asyncio; asyncio.run(create_tables())"
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-## Step 10: Run the Application
+## Step 12: Run the Application
 
 You'll need two terminal windows:
 
@@ -159,7 +197,7 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # Run the backend
-uvicorn main:app --reload
+python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 **Terminal 2 (Frontend):**
@@ -168,7 +206,7 @@ cd frontend
 npm run dev
 ```
 
-## Step 11: Access the Application
+## Step 13: Access the Application
 
 1. Frontend: http://localhost:3000
 2. Backend API: http://localhost:8000
@@ -184,7 +222,7 @@ npm run dev
    npm run dev -- -p 3001
    
    # Backend
-   uvicorn main:app --reload --port 8001
+   python -m uvicorn main:app --host 0.0.0.0 --port 8001 --reload
    ```
 
 2. **Database connection errors**: 
@@ -196,7 +234,12 @@ npm run dev
    - Verify API keys are correct
    - Check that URLs in Clerk dashboard match your setup
 
-4. **Missing dependencies**:
+4. **SMTP email issues**:
+   - Verify SMTP settings in `users.py`
+   - Ensure your email service allows app-specific passwords
+   - Check that your account has permission to send emails via SMTP
+
+5. **Missing dependencies**:
    - Ensure all npm and pip installations completed successfully
    - Check for error messages during installation
 
@@ -207,9 +250,11 @@ If you encounter issues:
 2. Verify all environment variables are set correctly
 3. Ensure all services (PostgreSQL) are running
 4. Confirm all dependencies are installed
+5. Test SMTP email configuration
 
 For further assistance, refer to:
 - [Next.js Documentation](https://nextjs.org/docs)
 - [FastAPI Documentation](https://fastapi.tiangolo.com/)
 - [Clerk Documentation](https://docs.clerk.dev/)
 - [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Cloudflare R2 Documentation](https://developers.cloudflare.com/r2/)

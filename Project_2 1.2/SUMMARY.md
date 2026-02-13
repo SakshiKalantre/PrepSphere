@@ -5,29 +5,80 @@ PrepSphere is a comprehensive, modern web application designed to streamline the
 ## 🏗️ Project Structure
 
 ```
-prepsphere/
-├── frontend/           # Next.js 14 Frontend Application
+Project_2 1.2/
+├── Prepsphere_1.2/
+├── backend/            # FastAPI Backend Application
+│   ├── app/            # Core Application Logic
+│   │   ├── api/        # REST API Routes (v1)
+│   │   │   └── v1/
+│   │   │       ├── admin.py
+│   │   │       ├── clerk_webhook.py
+│   │   │       ├── contact_message.py
+│   │   │       ├── events.py
+│   │   │       ├── files.py
+│   │   │       ├── jobs.py
+│   │   │       ├── notifications.py
+│   │   │       ├── profiles.py
+│   │   │       ├── public.py
+│   │   │       ├── tpo.py
+│   │   │       ├── users.py
+│   │   ├── core/       # Config, Security, Auth
+│   │   │   ├── clerk_auth.py
+│   │   │   └── config.py
+│   │   ├── db/         # Database Session & Base
+│   │   │   └── session.py
+│   │   ├── models/     # SQLAlchemy Database Models
+│   │   │   ├── analytics.py
+│   │   │   ├── certificate.py
+│   │   │   ├── contact_message.py
+│   │   │   ├── event.py
+│   │   │   ├── file.py
+│   │   │   ├── job.py
+│   │   │   ├── notification.py
+│   │   │   ├── resume.py
+│   │   │   └── user.py
+│   │   ├── schemas/    # Pydantic Data Schemas
+│   │   │   ├── analytics.py
+│   │   │   ├── contact_message.py
+│   │   │   ├── event.py
+│   │   │   ├── file.py
+│   │   │   ├── job.py
+│   │   │   ├── notification.py
+│   │   │   └── user.py
+│   ├── uploads/        # Local File Storage (Fallback)
+│   ├── .env
+│   ├── main.py         # App Entry Point
+│   └── requirements.txt# Python Dependencies
+├── frontend/           # Next.js 15.2.3 Frontend Application
 │   ├── app/            # App Router (Pages & Layouts)
+│   │   ├── api/
 │   │   ├── dashboard/  # Secured Role-Based Dashboards
 │   │   │   ├── student/# Student Interface
 │   │   │   ├── tpo/    # TPO Interface
 │   │   │   └── admin/  # Admin Interface
-│   │   ├── (public)/   # Public Pages (Landing, About, Contact)
-│   │   └── layout.tsx  # Root Layout
+│   │   ├── reset-password/
+│   │   ├── sign-in/
+│   │   ├── sign-up/
+│   │   ├── verify-email/
+│   │   ├── globals.css
+│   │   ├── layout.tsx  # Root Layout
+│   │   └── page.tsx
 │   ├── components/     # Reusable UI Components (ShadCN/Custom)
+│   │   ├── ai-tools/
+│   │   ├── ui/
+│   │   ├── Chatbot.tsx
+│   │   └── LogoutButton.tsx
 │   ├── lib/            # Utilities (API clients, formatting)
+│   │   ├── chatbotKnowledge.ts
+│   │   └── utils.ts
 │   └── public/         # Static Assets
-├── backend/            # FastAPI Backend Application
-│   ├── app/            # Core Application Logic
-│   │   ├── api/        # REST API Routes (v1)
-│   │   ├── core/       # Config, Security, Auth
-│   │   ├── db/         # Database Session & Base
-│   │   ├── models/     # SQLAlchemy Database Models
-│   │   └── schemas/    # Pydantic Data Schemas
-│   ├── uploads/        # Local File Storage (Fallback)
-│   ├── main.py         # App Entry Point
-│   └── requirements.txt# Python Dependencies
 ├── DATABASE_SCHEMA.md  # Detailed Database Documentation
+├── DATABASE_SETUP.md   # Database Setup Instructions
+├── DEPLOYMENT.md       # Deployment Guide
+├── ROLE_BASED_SIGNUP.md# Role-Based Signup Implementation
+├── RUNNING.md          # Running Instructions
+├── SETUP_INSTRUCTIONS.md# Setup Instructions
+├── SUMMARY.md          # Project Summary
 └── README.md           # Quick Start Guide
 ```
 
@@ -59,16 +110,26 @@ prepsphere/
 *   **Application Review**: Shortlist, accept, or reject student applications.
 *   **Event Management**: Organize and schedule campus events.
 
-### 4. Public Interface
+### 4. Admin Module
+*   **User Management**: Monitor and manage all users across the platform.
+*   **System Administration**: Oversee platform operations and content.
+*   **Analytics Oversight**: Access to comprehensive platform analytics.
+
+### 5. Public Interface
 *   **Landing Page**: Modern, responsive design showcasing college placement highlights.
 *   **Recruiter Showcase**: Dynamic "Leading Companies" section fetching real company logos via **Brandfetch API**.
 *   **Contact System**: Integrated contact form for inquiries.
+
+### 6. Email & Communication
+*   **Account Verification**: Automatic email verification system.
+*   **Password Reset**: Secure password reset functionality.
+*   **Direct Email**: Mailto links for direct communication between users.
 
 ## 🎨 Design & UI/UX
 
 ### Design System
 *   **Framework**: Tailwind CSS.
-*   **Component Library**: ShadCN UI (Radix Primitives).
+*   **Component Library**: ShadCN UI (Radix Primitives), Radix UI.
 *   **Icons**: Lucide React.
 *   **Charts**: Recharts.
 
@@ -86,19 +147,22 @@ The application follows a premium academic theme:
 ## 🔧 Technical Stack
 
 ### Frontend
-*   **Core**: Next.js 14 (App Router), React 18, TypeScript.
+*   **Core**: Next.js 15.2.3 (App Router), React 18, TypeScript.
 *   **Styling**: Tailwind CSS, CSS Modules.
 *   **State/Data**: React Hooks, SWR (stale-while-revalidate).
 *   **Integrations**: Clerk (Auth), Brandfetch (Logos), UI Avatars (Fallback).
+*   **UI Components**: Radix UI, ShadCN UI.
 
 ### Backend
-*   **Core**: FastAPI (Python 3.12+), Uvicorn.
+*   **Core**: FastAPI (Python 3.8+), Uvicorn.
 *   **Database**: PostgreSQL (hosted on **Neon DB**), SQLAlchemy ORM.
 *   **Validation**: Pydantic v2.
+*   **Authentication**: Clerk JWT verification.
 *   **File Storage**:
     *   **Primary**: Cloudflare R2 (S3-compatible object storage).
     *   **Fallback**: Local filesystem storage (for development).
     *   **Features**: MIME type validation, file hashing, size limits (10MB).
+*   **Email**: SMTP functionality for verification and notifications.
 
 ## 💾 Database Schema Overview
 
@@ -109,5 +173,7 @@ The system uses a relational PostgreSQL database with the following key entities
 *   **Files & Certificates**: Document metadata and verification status.
 *   **Analytics**: Aggregated placement data tables.
 *   **Notifications**: System-wide alert tracking.
+*   **Contact Messages**: Inquiry and feedback management.
+*   **Password Reset Tokens**: Secure password reset functionality.
 
 *(See `DATABASE_SCHEMA.md` for full detailed schema)*
