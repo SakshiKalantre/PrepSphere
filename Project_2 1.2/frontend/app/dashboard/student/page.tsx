@@ -323,10 +323,13 @@ export default function StudentDashboard() {
       // Also update name in users table if changed
       const [firstName, ...rest] = (profile.name || '').split(' ')
       const lastName = rest.join(' ')
+      const userUpdateData: any = { first_name: firstName || null, phone_number: profile.phone || null }
+      if (lastName) userUpdateData.last_name = lastName
+      
       await fetch(`${API_BASE}/api/v1/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ first_name: firstName || null, last_name: lastName || null, phone_number: profile.phone || null })
+        body: JSON.stringify(userUpdateData)
       })
       
       alert('Profile saved successfully!')
@@ -988,20 +991,21 @@ export default function StudentDashboard() {
                       </Card>
                     </div>
                     
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="resumeUpload">Upload Resume</Label>
-                        <div className="mt-2 flex items-center gap-2">
-                          <input id="resumeUpload" type="file" onChange={(e)=>{
+                        <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                          <input id="resumeUpload" type="file" className="flex-1 min-w-0 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-maroon/10 file:text-maroon hover:file:bg-maroon/20"
+                            onChange={(e)=>{
                             const f=e.target.files?.[0]||null;
                             if (!f) { setResumeFile(null); return }
                             if (f.type !== 'application/pdf' && !f.type.startsWith('image/')) { alert('Only PDF and Image files are accepted'); e.currentTarget.value=''; setResumeFile(null); return }
                             if (f.size > 500*1024) { alert('Max file size is 500 KB'); e.currentTarget.value=''; setResumeFile(null); return }
                             setResumeFile(f)
                           }} />
-                          <Button size="sm" onClick={()=>handleResumeUpload(resumeFile)} className="bg-maroon hover:bg-maroon/90">Upload</Button>
+                          <Button size="sm" onClick={()=>handleResumeUpload(resumeFile)} className="bg-maroon hover:bg-maroon/90 whitespace-nowrap">Upload</Button>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">Note: Only PDF files up to 500 KB are accepted.</p>
+                        <p className="text-xs text-gray-600 mt-2">Note: Only PDF files up to 500 KB are accepted.</p>
                         {resumeProgress > 0 && (
                           <div className="mt-2 h-2 w-full bg-gray-200 rounded">
                             <div className="h-2 bg-maroon rounded" style={{ width: `${resumeProgress}%` }} />
@@ -1011,8 +1015,9 @@ export default function StudentDashboard() {
                       </div>
                       <div>
                         <Label htmlFor="docUpload">{profile.placementStatus === 'Placed' ? 'Upload Offer Letter' : 'Upload Certificate'}</Label>
-                        <div className="mt-2 flex items-center gap-2">
-                          <input id="docUpload" type="file" onChange={(e)=>{
+                        <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                          <input id="docUpload" type="file" className="flex-1 min-w-0 text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-maroon/10 file:text-maroon hover:file:bg-maroon/20"
+                            onChange={(e)=>{
                             const f=e.target.files?.[0]||null;
                             if (!f) { 
                                 if (profile.placementStatus === 'Placed') setOfferLetterFile(null)
@@ -1033,9 +1038,9 @@ export default function StudentDashboard() {
                           <Button size="sm" variant="outline" onClick={()=>{
                               if (profile.placementStatus === 'Placed') handleOfferLetterUpload(offerLetterFile)
                               else handleCertificateUpload(certificateFile, certificateFile?.name || '')
-                          }}>Submit</Button>
+                          }} className="whitespace-nowrap">Submit</Button>
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">Note: PDF and Image files up to {profile.placementStatus === 'Placed' ? '50 KB' : '500 KB'} are accepted.</p>
+                        <p className="text-xs text-gray-600 mt-2">Note: PDF and Image files up to {profile.placementStatus === 'Placed' ? '50 KB' : '500 KB'} are accepted.</p>
                         {certProgress > 0 && profile.placementStatus !== 'Placed' && (
                           <div className="mt-2 h-2 w-full bg-gray-200 rounded">
                             <div className="h-2 bg-gold rounded" style={{ width: `${certProgress}%` }} />
