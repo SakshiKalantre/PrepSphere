@@ -200,7 +200,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="py-20 bg-maroon text-white">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6">Smt. P.N. Doshi Women's College</h1>
+          <h1 className="text-5xl md:text-6xl font-bold mb-6">Model college of science and commerce</h1>
           <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto">
             Empowering women through quality education and exceptional placement opportunities
           </p>
@@ -263,7 +263,7 @@ export default function HomePage() {
               <div className="absolute inset-0 bg-[url('/images/college-building.jpg')] bg-cover bg-center filter saturate-150 brightness-110 contrast-105"></div>
               <div className="absolute inset-0 bg-gradient-to-b from-sky-300/60 via-sky-200/40 to-transparent z-0"></div>
               <div className="text-center px-4 relative z-10">
-                <h3 className="text-maroon text-3xl font-bold mb-2 drop-shadow-sm">Smt. P.N. Doshi Women's College</h3>
+                <h3 className="text-maroon text-3xl font-bold mb-2 drop-shadow-sm">Model college of science and commerce</h3>
                 <p className="text-gray-800 text-xl">Empowering Women Through Education</p>
               </div>
             </div>
@@ -572,9 +572,9 @@ export default function HomePage() {
                   <div>
                     <h4 className="font-semibold text-lg text-gray-800">Address</h4>
                     <p className="text-gray-600">
-                      Smt. P.N. Doshi Women's College<br />
-                      JAG DHIR BODA VIDYA SANKUL, Camalane, Ghatkopar West<br />
-                      Mumbai, Maharashtra 400086
+                      Model college of science and commerce<br />
+                      Chinchpada Rd,Katemanvali,Naka,Kalyan,<br />
+                      Mumbai, Maharashtra 421306
                     </p>
                   </div>
                 </div>
@@ -588,8 +588,8 @@ export default function HomePage() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-lg text-gray-800">Email</h4>
-                    <p className="text-gray-600">principalspndoshi@gmail.com</p>
-                    <p className="text-gray-600">spnd.bcadepartment@gmail.com</p>
+                    <p className="text-gray-600">principal.Modelcollege@gmail.com</p>
+                    <p className="text-gray-600">model.bcsdepartment@gmail.com</p>
                   </div>
                 </div>
                 
@@ -814,7 +814,7 @@ export default function HomePage() {
                 Empowering women through quality education and exceptional placement opportunities.
               </p>
               <div className="flex items-center">
-                <a href="https://spndoshicollege.com/" className="text-cream/80 hover:text-white transition-colors underline">
+                <a href="https://modelcollegekalyan.com/" className="text-cream/80 hover:text-white transition-colors underline">
                   Official Website
                 </a>
               </div>
@@ -833,7 +833,7 @@ export default function HomePage() {
           </div>
           
           <div className="border-t border-cream/20 mt-8 pt-8 text-center text-cream/80">
-            <p>&copy; {new Date().getFullYear()} Smt. P.N. Doshi Women's College. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} Model College of Science and Commerce. All rights reserved.</p>
           </div>
         </div>
       </footer>
